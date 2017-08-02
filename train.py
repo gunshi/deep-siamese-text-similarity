@@ -30,7 +30,7 @@ tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epoch
 tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
-tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
+tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
@@ -256,7 +256,7 @@ with tf.Graph().as_default():
         epoch_end_time = time.time()
         print("Total time for {} th-epoch is {}\n".format(nn, epoch_end_time-epoch_start_time))
         save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
-        save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, 50],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
+        save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.6],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
 
     end_time = time.time()
     print("Total time for {} epochs is {}".format(FLAGS.num_epochs, end_time-start_time))
