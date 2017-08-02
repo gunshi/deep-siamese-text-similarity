@@ -16,11 +16,10 @@ from amos import Conv
 # Parameters
 # ==================================================
 
-tf.flags.DEFINE_integer("embedding_dim", 300, "Dimensionality of character embedding (default: 300)")
+tf.flags.DEFINE_integer("embedding_dim", 1000, "Dimensionality of character embedding (default: 300)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
 tf.flags.DEFINE_string("training_file_path", "/data4/abhijeet/gta/final/", "training folder (default: /home/halwai/gta_data/final)")
-tf.flags.DEFINE_integer("hidden_units", 100, "Number of hidden units in softmax regression layer (default:50)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 
 # Training parameters
@@ -28,9 +27,9 @@ tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
 #tf.flags.DEFINE_integer("evaluate_every", 2, "Evaluate model on dev set after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
-tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
+tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
-tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI-2016(default: contrastive)")
+tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 
 # Misc Parameters
@@ -81,7 +80,6 @@ with tf.Graph().as_default():
             sequence_length=FLAGS.max_frames,
             input_size=9216,
             embedding_size=FLAGS.embedding_dim,
-            hidden_units=FLAGS.hidden_units,
             l2_reg_lambda=FLAGS.l2_reg_lambda,
             batch_size=FLAGS.batch_size,
             num_lstm_layers=FLAGS.num_lstm_layers,
@@ -164,7 +162,7 @@ with tf.Graph().as_default():
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
         _, step, loss, dist, summary = sess.run([tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
-        #time_str = datetime.datetime.now().isoformat()
+        time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = np.sum(y_batch==d)
         #print("TRAIN {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
@@ -193,7 +191,7 @@ with tf.Graph().as_default():
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
         step, loss, dist, summary = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
-        #time_str = datetime.datetime.now().isoformat()
+        time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = np.sum(y_batch==d)
         #print("DEV {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
@@ -257,7 +255,7 @@ with tf.Graph().as_default():
 
         epoch_end_time = time.time()
         print("Total time for {} th-epoch is {}\n".format(nn, epoch_end_time-epoch_start_time))
-        save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, len(train_set[2])],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
+        save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
         save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, 50],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
 
     end_time = time.time()

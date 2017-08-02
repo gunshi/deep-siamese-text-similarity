@@ -68,7 +68,7 @@ class SiameseLSTM(object):
         return tf.reduce_sum(tmp +tmp2)/batch_size/2
     
     def __init__(
-      self, sequence_length, input_size, embedding_size, hidden_units, l2_reg_lambda, batch_size, num_lstm_layers, hidden_unit_dim, loss, projection):
+      self, sequence_length, input_size, embedding_size, l2_reg_lambda, batch_size, num_lstm_layers, hidden_unit_dim, loss, projection):
 
       # Placeholders for input, output and dropout
       self.input_x1 = tf.placeholder(tf.float32, [None, input_size], name="input_x1")
