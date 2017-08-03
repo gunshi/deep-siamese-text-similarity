@@ -139,9 +139,14 @@ class InputHelper(object):
             for batch_num in range(num_batches_per_epoch):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
-                yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec)),
-                    np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec)),
-                    y_shuffled[start_index:end_index])
+		if random()>0.5:
+	            yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,True)),
+			np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,True)),
+	                y_shuffled[start_index:end_index])
+		else:
+	            yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,False)),
+			np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,False)),
+	                y_shuffled[start_index:end_index])
     
     
     def normalize_input(self, img, conv_model_spec):
@@ -154,7 +159,18 @@ class InputHelper(object):
         batch_seq = []
         for img_paths in seq_paths:
             for img_path in img_paths:
-                img = misc.imread(img_path)
+                img_org = misc.imread(img_path)
+		if(mirror):
+		    img=np.fliplr(img_org)
+		    #h,w,c = img.shape
+		    #noise = np.random.randint(0,50,(h, w))
+		    #zitter = np.zeros_like(img)
+		    #zitter[:,:,1] = noise  
+		    #noise_added = cv2.add(img, zitter)
+		    #combined = np.vstack((img[:h/2,:,:], noise_added[h/2:,:,:]))
+		    #img=combined
+		else:
+		    img=img_org 
                 img_normalized = self.normalize_input(img, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 batch_seq.append(np.asarray(img_resized))
