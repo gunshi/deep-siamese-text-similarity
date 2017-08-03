@@ -164,12 +164,11 @@ class InputHelper(object):
         if(mirror):
             img=np.fliplr(img_org)
             #h,w,c = img.shape
-            #noise = np.random.randint(0,50,(h, w))
+            #noise = np.random.randint(0,30,(h, w))
             #zitter = np.zeros_like(img)
             #zitter[:,:,1] = noise  
             #noise_added = cv2.add(img, zitter)
-            #combined = np.vstack((img[:h/2,:,:], noise_added[h/2:,:,:]))
-            #img=combined
+            #img=noise_added
         else:
             img=img_org 
                 img_normalized = self.normalize_input(img, conv_model_spec)
