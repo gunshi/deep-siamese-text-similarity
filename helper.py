@@ -52,6 +52,8 @@ class InputHelper(object):
                 if ('/' in line):
                     line = line.split("/")[0]
                 l.append(line.strip())
+
+
         # positive samples from file
         num_positive_samples = len(l)
         for i in range(0,num_positive_samples,2):
@@ -204,25 +206,33 @@ class InputHelper(object):
         train_set=[]
         dev_set=[]
 
-        
+        dev_idx = -1*len(y)*percent_dev//100
+        # Split train/test set
+        # TODO: This is very crude, should use cross-validation
+        x1_train_ordered, x1_dev_ordered = x1[:dev_idx], x1[dev_idx:]
+        x2_train_ordered, x2_dev_ordered = x2[:dev_idx], x2[dev_idx:]
+        y_train_ordered, y_dev_ordered = y[:dev_idx], y[dev_idx:]
+        print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
+     
         # Randomly shuffle data
         np.random.seed(131)
-        shuffle_indices = np.random.permutation(np.arange(len(y)))
-        x1_shuffled = x1[shuffle_indices]
-        x2_shuffled = x2[shuffle_indices]
-        y_shuffled = y[shuffle_indices]
-        dev_idx = -1*len(y_shuffled)*percent_dev//100
+        shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
+        x1_train = x1_train_ordered[shuffle_indices]
+        x2_train = x2_train_ordered[shuffle_indices]
+        y_train = y_train_ordered[shuffle_indices]
 
-        # Split train/test set
+        # Randomly shuffle data
+        np.random.seed(131)
+        shuffle_indices = np.random.permutation(np.arange(len(y_dev_ordered)))
+        x1_dev = x1_dev_ordered[shuffle_indices]
+        x2_dev = x2_dev_ordered[shuffle_indices]
+        y_dev = y_dev_ordered[shuffle_indices]
+
         #self.dumpValidation(x1,x2,y,shuffle_indices,dev_idx,0)
         del x1
         del x2
 
-        # TODO: This is very crude, should use cross-validation
-        x1_train, x1_dev = x1_shuffled[:dev_idx], x1_shuffled[dev_idx:]
-        x2_train, x2_dev = x2_shuffled[:dev_idx], x2_shuffled[dev_idx:]
-        y_train, y_dev = y_shuffled[:dev_idx], y_shuffled[dev_idx:]
-        print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train), len(y_dev)))
+
 
         temp = len(y_train)//batch_size
         sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
