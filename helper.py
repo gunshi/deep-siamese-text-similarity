@@ -33,7 +33,7 @@ class InputHelper(object):
         return temp
 
 
-    def getTsvData(self, base_filepath, max_document_length,simplify):
+    def getTsvData(self, base_filepath, max_document_length, simplify):
         print("Loading training data from " + base_filepath)
         x1=[]
         x2=[]
@@ -46,29 +46,29 @@ class InputHelper(object):
             mapping_dict['F' + str(line_no+1)] = line.strip()
 
         # Loading Positive sample file
-	train_data=[]
-	with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
-    	    for row in file1:
+        train_data=[]
+        with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+            for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
 
                 if(len(temp)>0 and temp[0][0]!='/'):
-		    train_data.append(temp)
-	assert(len(train_data)%7==0)
+                    train_data.append(temp)
+        assert(len(train_data)%7==0)
 
-	l = []
-	tags_simplify=['overlap','same']
-	#simplify can only be: 'inverse','same','none'
-	values_simplify=['inverse','same','none']
-	assert(simplify in values_simplify)
-	for exampleIter in range(0,len(train_data),7):
-	    if(simplify!='none'):
-		if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+        l = []
+        tags_simplify=['overlap','same']
+        #simplify can only be: 'inverse','same','none'
+        values_simplify=['inverse','same','none']
+        assert(simplify in values_simplify)
+        for exampleIter in range(0,len(train_data),7):
+            if(simplify!='none'):
+                if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
                     l.append(' '.join(train_data[exampleIter+1]))
                     l.append(' '.join(train_data[exampleIter+2]))
-	    else:
-                l.append(' '.join(train_data[exampleIter+1]))
-                l.append(' '.join(train_data[exampleIter+2]))
+                else:
+                    l.append(' '.join(train_data[exampleIter+1]))
+                    l.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
@@ -82,6 +82,7 @@ class InputHelper(object):
                 x2.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
 
             y.append(1)#np.array([0,1]))
+
 
         # Loading Negative sample file
         l = []
@@ -180,16 +181,15 @@ class InputHelper(object):
         for img_paths in seq_paths:
             for img_path in img_paths:
                 img_org = misc.imread(img_path)
-        if(mirror):
-            img=np.fliplr(img_org)
-            #h,w,c = img.shape
-            #noise = np.random.randint(0,30,(h, w))
-            #zitter = np.zeros_like(img)
-            #zitter[:,:,1] = noise  
-            #noise_added = cv2.add(img, zitter)
-            #img=noise_added
-        else:
-            img=img_org 
+                if(mirror):
+                    img_org=np.fliplr(img_org)
+                    #h,w,c = img.shape
+                    #noise = np.random.randint(0,30,(h, w))
+                    #zitter = np.zeros_like(img)
+                    #zitter[:,:,1] = noise  
+                    #noise_added = cv2.add(img, zitter)
+                    #img=noise_added
+                img=img_org 
                 img_normalized = self.normalize_input(img, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 batch_seq.append(np.asarray(img_resized))
@@ -217,8 +217,8 @@ class InputHelper(object):
     
     
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
-	simplify='same' #'inverse','none'
-        x1, x2, y=self.getTsvData(training_paths, max_document_length,simplify)
+        simplify='same' #'inverse','none'
+        x1, x2, y=self.getTsvData(training_paths, max_document_length, simplify)
         
         i1=0
         train_set=[]
@@ -250,8 +250,6 @@ class InputHelper(object):
         del x1
         del x2
 
-
-
         temp = len(y_train)//batch_size
         sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
         train_set=(x1_train,x2_train,y_train)
@@ -263,9 +261,9 @@ class InputHelper(object):
 
     def getTestDataSet(self, data_path, max_document_length):
         x1,x2,y = self.getTsvTestData(data_path, max_document_length)
-
         gc.collect()
         return x1,x2, y
+
 
 def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
     pyplot.figure()
@@ -280,7 +278,6 @@ def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
 
 def compute_distance(distance, loss):
     d = np.copy(distance)
-    #print(d)
     if loss == "AAAI":
         d[distance>=0.5]=1
         d[distance<0.5]=0
@@ -289,5 +286,4 @@ def compute_distance(distance, loss):
         d[distance<=0.5]=1
     else:
         raise ValueError("Unkown loss function {%s}".format(loss))
-    #print(d)
     return d
