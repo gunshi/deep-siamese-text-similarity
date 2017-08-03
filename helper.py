@@ -64,15 +64,16 @@ class InputHelper(object):
 
             y.append(1)#np.array([0,1]))
 
+        # Loading Negative sample file
         l = []
         for line in open(base_filepath + 'negative_annotations.txt'):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
                 l.append(line.strip())
         
-        # positive samples from file
-        num_positive_samples = len(l)
-        for i in range(0,num_positive_samples,2):
+        # negative samples from file
+        num_negative_samples = len(l)
+        for i in range(0,num_negative_samples,2):
             if random() > 0.5:
                 x1.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
                 x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
@@ -139,14 +140,14 @@ class InputHelper(object):
             for batch_num in range(num_batches_per_epoch):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
-		if random()>0.5:
-	            yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,True)),
-			np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,True)),
-	                y_shuffled[start_index:end_index])
-		else:
-	            yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,False)),
-			np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,False)),
-	                y_shuffled[start_index:end_index])
+        if random()>0.5:
+                yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,True)),
+            np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,True)),
+                    y_shuffled[start_index:end_index])
+        else:
+                yield(np.asarray(self.load_preprocess_images(x1_shuffled[start_index:end_index], conv_model_spec,False)),
+            np.asarray(self.load_preprocess_images(x2_shuffled[start_index:end_index], conv_model_spec,False)),
+                    y_shuffled[start_index:end_index])
     
     
     def normalize_input(self, img, conv_model_spec):
@@ -160,17 +161,17 @@ class InputHelper(object):
         for img_paths in seq_paths:
             for img_path in img_paths:
                 img_org = misc.imread(img_path)
-		if(mirror):
-		    img=np.fliplr(img_org)
-		    #h,w,c = img.shape
-		    #noise = np.random.randint(0,50,(h, w))
-		    #zitter = np.zeros_like(img)
-		    #zitter[:,:,1] = noise  
-		    #noise_added = cv2.add(img, zitter)
-		    #combined = np.vstack((img[:h/2,:,:], noise_added[h/2:,:,:]))
-		    #img=combined
-		else:
-		    img=img_org 
+        if(mirror):
+            img=np.fliplr(img_org)
+            #h,w,c = img.shape
+            #noise = np.random.randint(0,50,(h, w))
+            #zitter = np.zeros_like(img)
+            #zitter[:,:,1] = noise  
+            #noise_added = cv2.add(img, zitter)
+            #combined = np.vstack((img[:h/2,:,:], noise_added[h/2:,:,:]))
+            #img=combined
+        else:
+            img=img_org 
                 img_normalized = self.normalize_input(img, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 batch_seq.append(np.asarray(img_resized))
