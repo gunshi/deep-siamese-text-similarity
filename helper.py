@@ -181,7 +181,7 @@ class InputHelper(object):
         for img_paths in seq_paths:
             for img_path in img_paths:
                 img_org = misc.imread(img_path)
-                if(mirror):
+                if(random()>0.5):
                     img_org=np.fliplr(img_org)
                     #h,w,c = img.shape
                     #noise = np.random.randint(0,30,(h, w))
