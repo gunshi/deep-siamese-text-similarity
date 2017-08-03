@@ -33,7 +33,7 @@ class InputHelper(object):
         return temp
 
 
-    def getTsvData(self, base_filepath, max_document_length):
+    def getTsvData(self, base_filepath, max_document_length,simplify):
         print("Loading training data from " + base_filepath)
         x1=[]
         x2=[]
@@ -46,12 +46,29 @@ class InputHelper(object):
             mapping_dict['F' + str(line_no+1)] = line.strip()
 
         # Loading Positive sample file
-        l = []
-        for line in open(base_filepath + 'positive_annotations.txt'):
-            if (line[0] == 'F'):
-                if ('/' in line):
-                    line = line.split("/")[0]
-                l.append(line.strip())
+	train_data=[]
+	with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+    	    for row in file1:
+                temprow=row.split('/', 1)[0]
+                temp=temprow.split()
+
+                if(len(temp)>0 and temp[0][0]!='/'):
+		    train_data.append(temp)
+	assert(len(train_data)%7==0)
+
+	l = []
+	tags_simplify=['overlap','same']
+	#simplify can only be: 'inverse','same','none'
+	values_simplify=['inverse','same','none']
+	assert(simplify in values_simplify)
+	for exampleIter in range(0,len(train_data),7):
+	    if(simplify!='none'):
+		if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+                    l.append(' '.join(train_data[exampleIter+1]))
+                    l.append(' '.join(train_data[exampleIter+2]))
+	    else:
+                l.append(' '.join(train_data[exampleIter+1]))
+                l.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
@@ -200,7 +217,8 @@ class InputHelper(object):
     
     
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
-        x1, x2, y=self.getTsvData(training_paths, max_document_length)
+	simplify='same' #'inverse','none'
+        x1, x2, y=self.getTsvData(training_paths, max_document_length,simplify)
         
         i1=0
         train_set=[]
