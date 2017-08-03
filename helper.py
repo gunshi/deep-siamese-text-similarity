@@ -33,7 +33,7 @@ class InputHelper(object):
         return temp
 
 
-    def getTsvData(self, base_filepath, max_document_length):
+    def getTsvData(self, base_filepath, max_document_length,simplify):
         print("Loading training data from " + base_filepath)
         x1=[]
         x2=[]
@@ -46,12 +46,31 @@ class InputHelper(object):
             mapping_dict['F' + str(line_no+1)] = line.strip()
 
         # Loading Positive sample file
-        l = []
-        for line in open(base_filepath + 'positive_annotations.txt'):
-            if (line[0] == 'F'):
-                if ('/' in line):
-                    line = line.split("/")[0]
-                l.append(line.strip())
+	train_data=[]
+	with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+    	    for row in file1:
+                temprow=row.split('/', 1)[0]
+                temp=temprow.split()
+
+                if(len(temp)>0 and temp[0][0]!='/'):
+		    train_data.append(temp)
+	assert(len(train_data)%7==0)
+
+	l = []
+	tags_simplify=['overlap','same']
+	#simplify can only be: 'inverse','same','none'
+	values_simplify=['inverse','same','none']
+	assert(simplify in values_simplify)
+	for exampleIter in range(0,len(train_data),7):
+	    if(simplify!='none'):
+		if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+                    l.append(' '.join(train_data[exampleIter+1]))
+                    l.append(' '.join(train_data[exampleIter+2]))
+	    else:
+                l.append(' '.join(train_data[exampleIter+1]))
+                l.append(' '.join(train_data[exampleIter+2]))
+
+
         # positive samples from file
         num_positive_samples = len(l)
         for i in range(0,num_positive_samples,2):
@@ -164,12 +183,11 @@ class InputHelper(object):
         if(mirror):
             img=np.fliplr(img_org)
             #h,w,c = img.shape
-            #noise = np.random.randint(0,50,(h, w))
+            #noise = np.random.randint(0,30,(h, w))
             #zitter = np.zeros_like(img)
             #zitter[:,:,1] = noise  
             #noise_added = cv2.add(img, zitter)
-            #combined = np.vstack((img[:h/2,:,:], noise_added[h/2:,:,:]))
-            #img=combined
+            #img=noise_added
         else:
             img=img_org 
                 img_normalized = self.normalize_input(img, conv_model_spec)
@@ -199,31 +217,40 @@ class InputHelper(object):
     
     
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
-        x1, x2, y=self.getTsvData(training_paths, max_document_length)
+	simplify='same' #'inverse','none'
+        x1, x2, y=self.getTsvData(training_paths, max_document_length,simplify)
         
         i1=0
         train_set=[]
         dev_set=[]
 
-        
+        dev_idx = -1*len(y)*percent_dev//100
+        # Split train/test set
+        # TODO: This is very crude, should use cross-validation
+        x1_train_ordered, x1_dev_ordered = x1[:dev_idx], x1[dev_idx:]
+        x2_train_ordered, x2_dev_ordered = x2[:dev_idx], x2[dev_idx:]
+        y_train_ordered, y_dev_ordered = y[:dev_idx], y[dev_idx:]
+        print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
+     
         # Randomly shuffle data
         np.random.seed(131)
-        shuffle_indices = np.random.permutation(np.arange(len(y)))
-        x1_shuffled = x1[shuffle_indices]
-        x2_shuffled = x2[shuffle_indices]
-        y_shuffled = y[shuffle_indices]
-        dev_idx = -1*len(y_shuffled)*percent_dev//100
+        shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
+        x1_train = x1_train_ordered[shuffle_indices]
+        x2_train = x2_train_ordered[shuffle_indices]
+        y_train = y_train_ordered[shuffle_indices]
 
-        # Split train/test set
+        # Randomly shuffle data
+        np.random.seed(131)
+        shuffle_indices = np.random.permutation(np.arange(len(y_dev_ordered)))
+        x1_dev = x1_dev_ordered[shuffle_indices]
+        x2_dev = x2_dev_ordered[shuffle_indices]
+        y_dev = y_dev_ordered[shuffle_indices]
+
         #self.dumpValidation(x1,x2,y,shuffle_indices,dev_idx,0)
         del x1
         del x2
 
-        # TODO: This is very crude, should use cross-validation
-        x1_train, x1_dev = x1_shuffled[:dev_idx], x1_shuffled[dev_idx:]
-        x2_train, x2_dev = x2_shuffled[:dev_idx], x2_shuffled[dev_idx:]
-        y_train, y_dev = y_shuffled[:dev_idx], y_shuffled[dev_idx:]
-        print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train), len(y_dev)))
+
 
         temp = len(y_train)//batch_size
         sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
