@@ -16,6 +16,7 @@ tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training
 tf.flags.DEFINE_string("model", "/data4/abhijeet/runs/1501247261/checkpoints/model-300", "Load trained model checkpoint (Default: None)")
 tf.flags.DEFINE_string("eval_filepath", "/data4/abhijeet/final/", "testing folder (default: /home/halwai/gta_data/final)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
+tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -70,20 +71,17 @@ with graph.as_default():
         batches = inpH.batch_iter(x1_test,x2_test,y_test, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False, is_train=False)
         # Collect the predictions here
         all_predictions = []
-        all_d=[]
+        all_dist=[]
         for (x1_dev_b,x2_dev_b,y_dev_b) in batches:
             print(x1_dev_b)
             [x1] = sess.run([conv_output], {input_imgs: x1_dev_b})
             [x2] = sess.run([conv_output], {input_imgs: x2_dev_b})
-            [batch_predictions] = sess.run([predictions], {input_x1: x1, input_x2: x2, input_y:y_dev_b, dropout_keep_prob: 1.0})
-            all_predictions = np.concatenate([all_predictions, batch_predictions])
-            print(batch_predictions)
-            d = np.copy(batch_predictions)
-            d[d>=0.5]=1
-            d[d<0.5]=0
-            batch_acc = np.mean(y_dev_b==d)
-            all_d = np.concatenate([all_d, d])
-            print("DEV acc {}".format(batch_acc))
+            [dist] = sess.run([predictions], {input_x1: x1, input_x2: x2, input_y:y_dev_b, dropout_keep_prob: 1.0})
+            d = compute_distance(dist, FLAGS.loss)
+            correct = np.sum(y_batch==d)
+            all_dist = np.concatenate([all_dist, dist])
+            all_predictions = np.concatenate([all_predictions, correct])
+            
         for ex in all_predictions:
             print(ex) 
         correct_predictions = float(np.mean(all_d == y_test))
