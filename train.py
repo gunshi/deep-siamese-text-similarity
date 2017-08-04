@@ -114,9 +114,14 @@ with tf.Graph().as_default():
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
     checkpoint_prefix = os.path.join(checkpoint_dir, "model")
+    lstm_checkpoint_prefix = os.path.join(checkpoint_dir, "lstm_model")
     if not os.path.exists(checkpoint_dir):
         os.makedirs(checkpoint_dir)
+
+    out1 = tf.placeholder(tf.float32, name="out1")
+    out2 = tf.placeholder(tf.float32, name="out2")
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=2)
+    lstm_saver = tf.train.Saver([out1,out2], max_to_keep=100)
 
     # Initialize all variables
     sess.run(tf.global_variables_initializer())
@@ -189,13 +194,14 @@ with tf.Graph().as_default():
                              siameseModel.input_y: y_batch,
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
-        step, loss, dist, summary = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
+        step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,,siameseModel.out1,siameseModel.out2],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = np.sum(y_batch==d)
+	#save out1,ou2, also reshape them to get 2 x [seq length,lstm output of one sequence] arrangement	
         #print("DEV {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
         #print(y_batch, dist, d)
-        return summary, correct, loss
+        return summary, correct, loss, out1, out2
 
     # Generate batches
     batches=inpH.batch_iter(
@@ -234,7 +240,7 @@ with tf.Graph().as_default():
         for (x1_dev_b,x2_dev_b,y_dev_b) in dev_batches:
             if len(y_dev_b)<1:
                 continue
-            summary , batch_val_correct , val_batch_loss = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
+            summary , batch_val_correct , val_batch_loss, out1, out2 = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)
             val_epoch_loss = val_epoch_loss + val_batch_loss
@@ -248,6 +254,7 @@ with tf.Graph().as_default():
             if sum_val_correct >= max_validation_correct:
                 max_validation_correct = sum_val_correct
                 saver.save(sess, checkpoint_prefix, global_step=current_step)
+                lstm_saver.save(sess, lstm_checkpoint_prefix, global_step=current_step)
                 tf.train.write_graph(sess.graph.as_graph_def(), checkpoint_prefix, "graph"+str(nn)+".pb", as_text=False)
                 print("Saved model {} with checkpoint to {}".format(nn, checkpoint_prefix))
 
