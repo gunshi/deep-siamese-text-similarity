@@ -106,14 +106,16 @@ class SiameseLSTM(object):
           self.distance = tf.reshape(self.distance, [-1])
           self.distance = tf.exp(-self.distance, name="distance")
         with tf.name_scope("loss"):
-          self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)/batch_size
+          #self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)/batch_size
+          self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)
       elif loss == "contrastive":
         with tf.name_scope("output"):
           self.distance = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
           self.distance = tf.div(self.distance, tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
           self.distance = tf.reshape(self.distance, [-1], name="distance")
         with tf.name_scope("loss"):
-          self.loss = self.contrastive_loss(self.input_y, self.distance, batch_size)
+          #self.loss = self.contrastive_loss(self.input_y, self.distance, batch_size)
+          self.loss = self.contrastive_loss(self.input_y, self.distance, 1)
       else:
         raise ValueError(" Loss function is not-defined")
 

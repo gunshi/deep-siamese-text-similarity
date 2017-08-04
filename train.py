@@ -89,7 +89,8 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        optimizer = tf.train.AdamOptimizer(1e-2)
+        learning_rate=tf.train.exponential_decay(1e-2, global_step, 100, 0.95, staircase=False, name=None)
+        optimizer = tf.train.AdamOptimizer(learning_rate)
         print("initialized convModel and siameseModel object")
     
     grads_and_vars=optimizer.compute_gradients(siameseModel.loss)
@@ -114,14 +115,12 @@ with tf.Graph().as_default():
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
     checkpoint_dir = os.path.abspath(os.path.join(out_dir, "checkpoints"))
     checkpoint_prefix = os.path.join(checkpoint_dir, "model")
-    lstm_checkpoint_prefix = os.path.join(checkpoint_dir, "lstm_model")
+    #lstm_checkpoint_prefix = os.path.join(checkpoint_dir, "lstm_model")
     if not os.path.exists(checkpoint_dir):
-        os.makedirs(checkpoint_dir)
+            os.makedirs(checkpoint_dir)
 
-    out1 = tf.placeholder(tf.float32, name="out1")
-    out2 = tf.placeholder(tf.float32, name="out2")
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=2)
-    lstm_saver = tf.train.Saver([out1,out2], max_to_keep=100)
+    #lstm_saver = tf.train.Saver([out1,out2], max_to_keep=2)
 
     # Initialize all variables
     sess.run(tf.global_variables_initializer())
@@ -194,14 +193,13 @@ with tf.Graph().as_default():
                              siameseModel.input_y: y_batch,
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
-        step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,,siameseModel.out1,siameseModel.out2],  feed_dict)
+        step, loss, dist, summary = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = np.sum(y_batch==d)
-	#save out1,ou2, also reshape them to get 2 x [seq length,lstm output of one sequence] arrangement	
         #print("DEV {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
         #print(y_batch, dist, d)
-        return summary, correct, loss, out1, out2
+        return summary, correct, loss
 
     # Generate batches
     batches=inpH.batch_iter(
@@ -212,6 +210,7 @@ with tf.Graph().as_default():
     start_time = time.time()
     train_accuracy, val_accuracy = [] , []
     train_loss, val_loss = [], []
+    train_batch_loss_arr, val_batch_loss_arr = [], []
 
     for nn in xrange(FLAGS.num_epochs):
         print("Epoch Number: {}".format(nn))
@@ -227,10 +226,11 @@ with tf.Graph().as_default():
             train_writer.add_summary(summary, current_step)
             sum_train_correct = sum_train_correct + train_batch_correct    
             train_epoch_loss = train_epoch_loss + train_batch_loss
+            train_batch_loss_arr.append(train_batch_loss/len(y_batch))
         print("train_loss ={}".format(train_epoch_loss))
         print("total_train_correct={}/total_train={}".format(sum_train_correct, len(train_set[2])))
         train_accuracy.append(sum_train_correct*1.0/len(train_set[2]))
-        train_loss.append(train_epoch_loss)
+        train_loss.append(train_epoch_loss/len(train_set[2]))
 
         # Evaluate on Validataion Data for every epoch
         sum_val_correct=0.0
@@ -240,28 +240,30 @@ with tf.Graph().as_default():
         for (x1_dev_b,x2_dev_b,y_dev_b) in dev_batches:
             if len(y_dev_b)<1:
                 continue
-            summary , batch_val_correct , val_batch_loss, out1, out2 = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
+            summary , batch_val_correct , val_batch_loss = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)
             val_epoch_loss = val_epoch_loss + val_batch_loss
+            val_batch_loss_arr.append(val_batch_loss/len(dev_set[2]))
         print("val_loss ={}".format(val_epoch_loss))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
-        val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
-        val_loss.append(val_epoch_loss)
+        val_accuracy.append(sum_val_correct*1.0/len(y_batch))
+        val_loss.append(val_epoch_loss/len(dev_set[2]))
     
         # Update stored model
         if current_step % (FLAGS.checkpoint_every) == 0:
             if sum_val_correct >= max_validation_correct:
                 max_validation_correct = sum_val_correct
                 saver.save(sess, checkpoint_prefix, global_step=current_step)
-                lstm_saver.save(sess, lstm_checkpoint_prefix, global_step=current_step)
+                #lstm_saver.save(sess, lstm_checkpoint_prefix, global_step=current_step)
                 tf.train.write_graph(sess.graph.as_graph_def(), checkpoint_prefix, "graph"+str(nn)+".pb", as_text=False)
                 print("Saved model {} with checkpoint to {}".format(nn, checkpoint_prefix))
 
         epoch_end_time = time.time()
         print("Total time for {} th-epoch is {}\n".format(nn, epoch_end_time-epoch_start_time))
-        save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
-        save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.6],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
+        save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1.01],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
+        save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.2],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
+        save_plot(train_batch_loss_arr, val_batch_loss_arr, 'steps', 'loss', 'Loss vs steps', [-0.1, nn*sum_no_of_batches+0.1, 0, np.max(train_batch_loss_arr)+0.2],  ['train','val' ],'./loss_batch_'+str(FLAGS.hidden_dim))
 
     end_time = time.time()
     print("Total time for {} epochs is {}".format(FLAGS.num_epochs, end_time-start_time))

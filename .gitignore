@@ -3,3 +3,5 @@ AmosNetWeights.npy
 runs/
 final_run
 slurm*
+accuracy*
+loss*
