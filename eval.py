@@ -67,7 +67,7 @@ with graph.as_default():
         predictions = graph.get_operation_by_name("output/distance").outputs[0]
 
         # Generate batches for one epoch
-        batches = inpH.batch_iter(x1_test,x2_test,y_test, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False)
+        batches = inpH.batch_iter(x1_test,x2_test,y_test, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False, is_train=False)
         # Collect the predictions here
         all_predictions = []
         all_d=[]
