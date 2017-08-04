@@ -8,7 +8,7 @@ class SiameseLSTM(object):
     """
     def LSTMcell(self, n_hidden, reuse): 
         if  reuse:
-            return tf.contrib.rnn.BasicLSTMCell(n_hidden, reuse=reuse)
+            return tf.contrib.rnn.BasicLSTMCell(n_hidden reuse=reuse)
         else:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden,)
 

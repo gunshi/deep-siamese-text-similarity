@@ -25,12 +25,11 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
-#tf.flags.DEFINE_integer("evaluate_every", 2, "Evaluate model on dev set after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
-tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
+tf.flags.DEFINE_integer("hidden_dim", 10, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
-tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
+tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
@@ -200,7 +199,7 @@ with tf.Graph().as_default():
 
     # Generate batches
     batches=inpH.batch_iter(
-                train_set[0], train_set[1], train_set[2], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec)
+                train_set[0], train_set[1], train_set[2], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, is_train=True)
 
     ptr=0
     max_validation_correct=0.0
@@ -214,7 +213,7 @@ with tf.Graph().as_default():
         sum_train_correct=0.0
         train_epoch_loss=0.0
         for kk in xrange(sum_no_of_batches):
-            x1_batch,x2_batch, y_batch = batches.next()
+            x1_batch, x2_batch, y_batch = batches.next()
             if len(y_batch)<1:
                 continue
             summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch)
@@ -228,11 +227,10 @@ with tf.Graph().as_default():
         train_loss.append(train_epoch_loss)
 
         # Evaluate on Validataion Data for every epoch
-        #if current_step % (FLAGS.evaluate_every) == 0:
         sum_val_correct=0.0
         val_epoch_loss=0.0
         print("\nEvaluation:")
-        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2], FLAGS.batch_size, 1, convModel.spec)
+        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2], FLAGS.batch_size, 1, convModel.spec, is_train=False)
         for (x1_dev_b,x2_dev_b,y_dev_b) in dev_batches:
             if len(y_dev_b)<1:
                 continue
