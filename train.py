@@ -24,9 +24,9 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
-tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
+tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 10, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
@@ -89,7 +89,7 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        learning_rate=tf.train.exponential_decay(1e-2, global_step, 100, 0.95, staircase=False, name=None)
+        learning_rate=tf.train.exponential_decay(1e-3, global_step, 100, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(learning_rate)
         print("initialized convModel and siameseModel object")
     

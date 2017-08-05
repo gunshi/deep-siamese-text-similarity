@@ -93,7 +93,7 @@ class InputHelper(object):
             x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(0)#np.array([0,1]))
         
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos), len(l_neg)
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, len(l_neg)//2
 
 
     def getTsvTestData(self, base_filepath, max_document_length):
@@ -229,12 +229,11 @@ class InputHelper(object):
         # take positive and negative samples in equal ratios
         dev_idx = [i for i in range(num_pos-1, num_pos-1-num_pos*percent_dev//100, -1 )] + [i for i in range(num_total-1, num_total-1-num_neg*percent_dev//100, -1 )] 
         train_idx = [i for i in range(0, num_pos-num_pos*percent_dev//100, 1 )] + [i for i in range(num_pos, num_total-num_neg*percent_dev//100, 1 )] 
-
         # Split train/test set
         # TODO: This is very crude, should use cross-validation
-        x1_train_ordered, x1_dev_ordered = [x1[i] for i in train_idx], [x1[i] for i in dev_idx] 
-        x2_train_ordered, x2_dev_ordered = [x2[i] for i in train_idx], [x2[i] for i in dev_idx]
-        y_train_ordered, y_dev_ordered = y[:dev_idx], y[dev_idx:]
+        x1_train_ordered, x1_dev_ordered = np.asarray([x1[i] for i in train_idx]), np.asarray([x1[i] for i in dev_idx]) 
+        x2_train_ordered, x2_dev_ordered = np.asarray([x2[i] for i in train_idx]), np.asarray([x2[i] for i in dev_idx])
+        y_train_ordered, y_dev_ordered = np.asarray([y[i] for i in train_idx]), np.asarray([y[i] for i in dev_idx]) 
         print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
      
         # Randomly shuffle data
