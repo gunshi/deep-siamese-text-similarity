@@ -59,7 +59,7 @@ class InputHelper(object):
                     train_data.append(temp)
         assert(len(train_data)%7==0)
 
-        l = []
+        l_pos = []
         tags_simplify=['overlap','same']
         #simplify can only be: 'inverse','same','none'
         values_simplify=['inverse','same','none']
@@ -68,32 +68,32 @@ class InputHelper(object):
         for exampleIter in range(0,len(train_data),7):
             if(simplify!='none'):
                 if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
-                    l.append(' '.join(train_data[exampleIter+1]))
-                    l.append(' '.join(train_data[exampleIter+2]))
+                    l_pos.append(' '.join(train_data[exampleIter+1]))
+                    l_pos.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
-        num_positive_samples = len(l)
+        num_positive_samples = len(l_pos)
         for i in range(0,num_positive_samples,2):
-            x1.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
-            x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
+            x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(1)#np.array([0,1]))
 
         # Loading Negative sample file
-        l = []
+        l_neg = []
         for line in open(base_filepath + 'negative_annotations.txt'):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
-                l.append(line.strip())
+                l_neg.append(line.strip())
         
         # negative samples from file
-        num_negative_samples = len(l)
+        num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
-            x1.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
-            x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
+            x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(0)#np.array([0,1]))
         
-        return np.asarray(x1),np.asarray(x2),np.asarray(y)
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos), len(l_neg)
 
 
     def getTsvTestData(self, base_filepath, max_document_length):
@@ -219,17 +219,21 @@ class InputHelper(object):
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
         simplify='same' #'inverse','none'
         self.apply_image_augmentations()
-        x1, x2, y=self.getTsvData(training_paths, max_document_length, simplify)
-        
+        x1, x2, y, num_pos, num_neg =self.getTsvData(training_paths, max_document_length, simplify)
+        num_total = num_pos + num_neg
+
         i1=0
         train_set=[]
         dev_set=[]
 
-        dev_idx = -1*len(y)*percent_dev//100
+        # take positive and negative samples in equal ratios
+        dev_idx = [i for i in range(num_pos-1, num_pos-1-num_pos*percent_dev//100, -1 )] + [i for i in range(num_total-1, num_total-1-num_neg*percent_dev//100, -1 )] 
+        train_idx = [i for i in range(0, num_pos-num_pos*percent_dev//100, 1 )] + [i for i in range(num_pos, num_total-num_neg*percent_dev//100, 1 )] 
+
         # Split train/test set
         # TODO: This is very crude, should use cross-validation
-        x1_train_ordered, x1_dev_ordered = x1[:dev_idx], x1[dev_idx:]
-        x2_train_ordered, x2_dev_ordered = x2[:dev_idx], x2[dev_idx:]
+        x1_train_ordered, x1_dev_ordered = [x1[i] for i in train_idx], [x1[i] for i in dev_idx] 
+        x2_train_ordered, x2_dev_ordered = [x2[i] for i in train_idx], [x2[i] for i in dev_idx]
         y_train_ordered, y_dev_ordered = y[:dev_idx], y[dev_idx:]
         print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
      

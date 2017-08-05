@@ -225,9 +225,9 @@ with tf.Graph().as_default():
             current_step = tf.train.global_step(sess, global_step)
             train_writer.add_summary(summary, current_step)
             sum_train_correct = sum_train_correct + train_batch_correct    
-            train_epoch_loss = train_epoch_loss + train_batch_loss
-            train_batch_loss_arr.append(train_batch_loss/len(y_batch))
-        print("train_loss ={}".format(train_epoch_loss))
+            train_epoch_loss = train_epoch_loss + train_batch_loss* len(y_batch)
+            train_batch_loss_arr.append(train_batch_loss*len(y_batch))
+        print("train_loss ={}".format(train_epoch_loss/len(train_set[2])))
         print("total_train_correct={}/total_train={}".format(sum_train_correct, len(train_set[2])))
         train_accuracy.append(sum_train_correct*1.0/len(train_set[2]))
         train_loss.append(train_epoch_loss/len(train_set[2]))
@@ -243,9 +243,9 @@ with tf.Graph().as_default():
             summary , batch_val_correct , val_batch_loss = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)
-            val_epoch_loss = val_epoch_loss + val_batch_loss
-            val_batch_loss_arr.append(val_batch_loss/len(dev_set[2]))
-        print("val_loss ={}".format(val_epoch_loss))
+            val_epoch_loss = val_epoch_loss + val_batch_loss*len(y_dev_b)
+            val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
+        print("val_loss ={}".format(val_epoch_loss/len(dev_set[2])))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
         val_accuracy.append(sum_val_correct*1.0/len(y_batch))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
