@@ -165,14 +165,15 @@ class InputHelper(object):
     def load_preprocess_images(self, side1_paths, side2_paths, conv_model_spec, is_train=True):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
-            seq_det = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
+            seq_det1 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
+            seq_det2 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
 
             for side1_img_path,side1_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
                 img_normalized = self.normalize_input(img_org, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 if is_train==True:
-                    img_aug = seq_det.augment_images(np.expand_dims(img_resized,axis=0))
+                    img_aug = seq_det1.augment_images(np.expand_dims(img_resized,axis=0))
                     batch1_seq.append(img_aug[0])
                 else: 
                     batch1_seq.append(img_resized)
@@ -181,7 +182,7 @@ class InputHelper(object):
                 img_normalized = self.normalize_input(img_org, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 if is_train==True:
-                    img_aug = seq_det.augment_images(np.expand_dims(img_resized, axis=0))
+                    img_aug = seq_det2.augment_images(np.expand_dims(img_resized, axis=0))
                     batch2_seq.append(img_aug[0])
                 else:
                     batch2_seq.append(img_resized)
@@ -243,11 +244,11 @@ class InputHelper(object):
         y_train = y_train_ordered[shuffle_indices]
 
         # Randomly shuffle data
-        np.random.seed(131)
-        shuffle_indices = np.random.permutation(np.arange(len(y_dev_ordered)))
-        x1_dev = x1_dev_ordered[shuffle_indices]
-        x2_dev = x2_dev_ordered[shuffle_indices]
-        y_dev = y_dev_ordered[shuffle_indices]
+        #np.random.seed(131)
+        #shuffle_indices = np.random.permutation(np.arange(len(y_dev_ordered)))
+        #x1_dev = x1_dev_ordered[shuffle_indices]
+        #x2_dev = x2_dev_ordered[shuffle_indices]
+        #y_dev = y_dev_ordered[shuffle_indices]
 
         #self.dumpValidation(x1,x2,y,shuffle_indices,dev_idx,0)
         del x1
@@ -256,7 +257,7 @@ class InputHelper(object):
         temp = len(y_train)//batch_size
         sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
         train_set=(x1_train,x2_train,y_train)
-        dev_set=(x1_dev,x2_dev,y_dev)
+        dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered)
         gc.collect()
         
         return train_set,dev_set,sum_no_of_batches

@@ -24,10 +24,10 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 25, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
-tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
-tf.flags.DEFINE_integer("hidden_dim", 10, "Number of LSTM layers(default: 2)")
+tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
+tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 
@@ -89,7 +89,7 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        learning_rate=tf.train.exponential_decay(1e-3, global_step, 100, 0.95, staircase=False, name=None)
+        learning_rate=tf.train.exponential_decay(1e-2, global_step, 200, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(learning_rate)
         print("initialized convModel and siameseModel object")
     
@@ -167,10 +167,10 @@ with tf.Graph().as_default():
         _, step, loss, dist, summary = sess.run([tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
-        correct = np.sum(y_batch==d)
+        correct = y_batch==d
         #print("TRAIN {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
         #print(y_batch, dist, d)
-        return summary, correct, loss
+        return summary, np.sum(correct), loss
 
     def dev_step(x1_batch, x2_batch, y_batch):
         
@@ -196,10 +196,10 @@ with tf.Graph().as_default():
         step, loss, dist, summary = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
-        correct = np.sum(y_batch==d)
+        correct = y_batch==d
         #print("DEV {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
         #print(y_batch, dist, d)
-        return summary, correct, loss
+        return summary, np.sum(correct), loss, correct
 
     # Generate batches
     batches=inpH.batch_iter(
@@ -235,19 +235,21 @@ with tf.Graph().as_default():
         # Evaluate on Validataion Data for every epoch
         sum_val_correct=0.0
         val_epoch_loss=0.0
+        val_results = []
         print("\nEvaluation:")
-        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2], FLAGS.batch_size, 1, convModel.spec, is_train=False)
+        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2], FLAGS.batch_size, 1, convModel.spec, shuffle=False , is_train=False)
         for (x1_dev_b,x2_dev_b,y_dev_b) in dev_batches:
             if len(y_dev_b)<1:
                 continue
-            summary , batch_val_correct , val_batch_loss = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
+            summary , batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b)
+            val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)
             val_epoch_loss = val_epoch_loss + val_batch_loss*len(y_dev_b)
             val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
         print("val_loss ={}".format(val_epoch_loss/len(dev_set[2])))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
-        val_accuracy.append(sum_val_correct*1.0/len(y_batch))
+        val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
     
         # Update stored model
@@ -263,7 +265,7 @@ with tf.Graph().as_default():
         print("Total time for {} th-epoch is {}\n".format(nn, epoch_end_time-epoch_start_time))
         save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1.01],  ['train','val' ],'./accuracy_'+str(FLAGS.hidden_dim))
         save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.2],  ['train','val' ],'./loss_'+str(FLAGS.hidden_dim))
-        save_plot(train_batch_loss_arr, val_batch_loss_arr, 'steps', 'loss', 'Loss vs steps', [-0.1, nn*sum_no_of_batches+0.1, 0, np.max(train_batch_loss_arr)+0.2],  ['train','val' ],'./loss_batch_'+str(FLAGS.hidden_dim))
+        save_plot(train_batch_loss_arr, val_batch_loss_arr, 'steps', 'loss', 'Loss vs steps', [-0.1, (nn+1)*sum_no_of_batches+0.1, 0, np.max(train_batch_loss_arr)+0.2],  ['train','val' ],'./loss_batch_'+str(FLAGS.hidden_dim))
 
     end_time = time.time()
     print("Total time for {} epochs is {}".format(FLAGS.num_epochs, end_time-start_time))

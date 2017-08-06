@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=cosmos
-#SBATCH --nodelist=magnetar
-#SBATCH --time=15:00:00
-#SBATCH --gres=gpu:1,gpu_mem:7000
+#SBATCH --nodelist=blazar
+#SBATCH --time=17:00:00
+#SBATCH --gres=gpu:1,gpu_mem:6100
 #SBATCH --mem=4000
 #SBATCH --qos=intermediate
 
@@ -11,5 +11,5 @@ source activate my_venv_2_7
 #python train.py --hidden_dim 10
 #python train.py --hidden_dim 20
 #python train.py --hidden_dim 30
-python train.py
+python train.py > slurm_output
 
