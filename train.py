@@ -119,6 +119,10 @@ with tf.Graph().as_default():
     if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
+    lstm_savepath="/data4/abhijeet/gta/lstm_outputs"
+    if not os.path.exists(lstm_savepath):
+            os.makedirs(lstm_savepath)
+
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=2)
     #lstm_saver = tf.train.Saver([out1,out2], max_to_keep=2)
 
@@ -172,7 +176,7 @@ with tf.Graph().as_default():
         #print(y_batch, dist, d)
         return summary, np.sum(correct), loss
 
-    def dev_step(x1_batch, x2_batch, y_batch, dev_iter):
+    def dev_step(x1_batch, x2_batch, y_batch, dev_iter, epoch):
         
         #A single training step
         
@@ -194,9 +198,9 @@ with tf.Graph().as_default():
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
         step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,siameseModel.out1,siameseModel.out2],  feed_dict)
-	np.save('out1_'+str(dev_iter),out1)
-	np.save('out2_'+str(dev_iter),out2)
-	np.save('y_'+str(dev_iter),y_batch)
+	np.save(lstm_savepath+'/out1_'+str(dev_iter)+'_'+str(epoch),out1)
+	np.save(lstm_savepath+'/out2_'+str(dev_iter)+'_'+str(epoch),out2)
+	np.save(lstm_savepath+'/y_'+str(dev_iter)+'_'+str(epoch),y_batch)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = y_batch==d
@@ -214,6 +218,7 @@ with tf.Graph().as_default():
     train_accuracy, val_accuracy = [] , []
     train_loss, val_loss = [], []
     train_batch_loss_arr, val_batch_loss_arr = [], []
+
 
     for nn in xrange(FLAGS.num_epochs):
         print("Epoch Number: {}".format(nn))
@@ -246,7 +251,7 @@ with tf.Graph().as_default():
             if len(y_dev_b)<1:
                 continue
 	    dev_iter += 1
-            summary , batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b,dev_iter)
+            summary , batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b,dev_iter,nn)
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)
