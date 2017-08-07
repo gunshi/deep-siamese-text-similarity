@@ -66,6 +66,17 @@ class SiameseLSTM(object):
         #tmp= tf.mul(y,tf.square(d))
         tmp2 = (1-y) *tf.square(tf.maximum((1 - d),0))
         return tf.reduce_sum(tmp +tmp2)/batch_size/2
+
+    def fc(self, input, in_channels, out_channels, name, relu):
+        input = tf.reshape(input , [-1, in_channels])
+        with tf.variable_scope(name) as scope:
+            filt = tf.get_variable('weights', shape=[in_channels , out_channels], trainable=False)
+            bias = tf.get_variable('biases',  shape=[out_channels], trainable=False)
+        if relu:
+            return tf.nn.relu(tf.nn.bias_add(tf.matmul(input, filt), bias))
+        else:
+            return tf.nn.bias_add(tf.matmul(input, filt), bias)
+
     
     def __init__(
       self, sequence_length, input_size, embedding_size, l2_reg_lambda, batch_size, num_lstm_layers, hidden_unit_dim, loss, projection):
@@ -98,7 +109,15 @@ class SiameseLSTM(object):
       with tf.name_scope("output"):
         self.out1=self.BiRNN(self.embedding1, self.dropout_keep_prob, "side1", embedding_size, sequence_length, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=False)
         self.out2=self.BiRNN(self.embedding2, self.dropout_keep_prob, "side1", embedding_size, sequence_length, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=True)
-      
+
+      #print('out1 info')
+      #print(type(self.out1)) #nparray batchsize x outputsize
+      #print(self.out1.shape)
+      #self.concat = tf.placeholder(tf.float32, shape = [None, 227, 227, 3], name = "concat")
+      #self.concat=tf.concat([self.out1,self.out2],1) #what to do about batch dimension
+      #print(concat.shape)
+      #self.distancelayer=self.fc(self.concat,in,out,relu=0) #/1   #import from conv?
+
       # define distance and loss functions
       if loss == "AAAI":
         with tf.name_scope("output"):
