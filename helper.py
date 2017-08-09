@@ -168,7 +168,7 @@ class InputHelper(object):
             seq_det1 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
             seq_det2 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
 
-            for side1_img_path,side1_img_path in zip(side1_img_paths, side2_img_paths):
+            for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
                 img_normalized = self.normalize_input(img_org, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
@@ -178,7 +178,7 @@ class InputHelper(object):
                 else: 
                     batch1_seq.append(img_resized)
 
-                img_org = misc.imread(side1_img_path)
+                img_org = misc.imread(side2_img_path)
                 img_normalized = self.normalize_input(img_org, conv_model_spec)
                 img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
                 if is_train==True:
