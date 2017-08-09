@@ -198,9 +198,9 @@ with tf.Graph().as_default():
                              siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
             }
         step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,siameseModel.out1,siameseModel.out2],  feed_dict)
-	np.save(lstm_savepath+'/out1_'+str(dev_iter)+'_'+str(epoch),out1)
-	np.save(lstm_savepath+'/out2_'+str(dev_iter)+'_'+str(epoch),out2)
-	np.save(lstm_savepath+'/y_'+str(dev_iter)+'_'+str(epoch),y_batch)
+	#np.save(lstm_savepath+'/out1_'+str(dev_iter)+'_'+str(epoch),out1)
+	#np.save(lstm_savepath+'/out2_'+str(dev_iter)+'_'+str(epoch),out2)
+	#np.save(lstm_savepath+'/y_'+str(dev_iter)+'_'+str(epoch),y_batch)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = y_batch==d
