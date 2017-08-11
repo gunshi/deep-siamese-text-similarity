@@ -60,7 +60,9 @@ class InputHelper(object):
         assert(len(train_data)%7==0)
 
         l_pos = []
-        tags_simplify=['overlap','same']
+        #tags_simplify=['overlap','same']
+        tags_simplify=['same']
+        
         #simplify can only be: 'inverse','same','none'
         values_simplify=['inverse','same','none']
         assert(simplify in values_simplify)
@@ -135,7 +137,7 @@ class InputHelper(object):
         data_size = len(y)
         temp = int(data_size/batch_size)
         num_batches_per_epoch = temp+1 if (data_size%batch_size) else temp
-        
+
         for epoch in range(num_epochs):
             # Shuffle the data at each epoch
             if shuffle:
@@ -151,7 +153,7 @@ class InputHelper(object):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
 
-                processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, is_train)
+                processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch, ,is_train)
                 yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index])
     
     
@@ -162,11 +164,11 @@ class InputHelper(object):
         return img
 
 
-    def load_preprocess_images(self, side1_paths, side2_paths, conv_model_spec, is_train=True):
+    def load_preprocess_images(self, side1_paths, side2_paths, conv_model_spec, epoch, is_train=True):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
-            seq_det1 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
-            seq_det2 = self.train_seq.to_deterministic() # call this for each batch again, NOT only once at the start
+            seq_det1 = self.seq_det[epoch%10] # call this for each batch again, NOT only once at the start
+            seq_det2 = self.seq_det[epoch%10] # call this for each batch again, NOT only once at the start
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
@@ -287,7 +289,7 @@ class InputHelper(object):
             )),
             # execute 0 to 5 of the following (less important) augmenters per image
             # don't execute all of them, as that would often be way too strong
-            iaa.SomeOf((0, 5),
+            iaa.SomeOf((3, 5),
                 [
                     sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
                     iaa.OneOf([
@@ -315,6 +317,13 @@ class InputHelper(object):
         ],
         random_order=True
         )
+
+    def data_augmentations(self):
+        seq_det = []
+        for i in range(10):
+            seq_det.append(self.train_seq.to_deterministic())
+        self.seq_det = seq_det
+
 
 
 def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
