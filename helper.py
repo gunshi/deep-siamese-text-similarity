@@ -152,6 +152,7 @@ class InputHelper(object):
             for batch_num in range(num_batches_per_epoch):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
+                #print(y_shuffled[start_index:end_index])
 
                 processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch ,is_train)
                 yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index])
@@ -189,8 +190,7 @@ class InputHelper(object):
                 else:
                     batch2_seq.append(img_resized)
 
-        #misc.imsave('temp1.jpg', np.hstack(batch1_seq))
-        #misc.imsave('temp2.jpg', np.hstack(batch2_seq))
+        #misc.imsave('temp1.png', np.vstack([np.hstack(batch1_seq),np.hstack(batch2_seq)]))
    
         #print(type(batch1_seq), type(np.asarray(batch1_seq)), np.shape(np.asarray(batch1_seq))) 
         #print(type(batch2_seq), type(np.asarray(batch2_seq)), np.shape(np.asarray(batch2_seq))) 
@@ -278,11 +278,10 @@ class InputHelper(object):
         [
             # apply the following augmenters to most images
             iaa.Fliplr(0.5), # horizontally flip 50% of all images
-            sometimes(iaa.Crop(percent=(0, 0.1))), # crop images by 0-10% of their height/width
+            sometimes(iaa.Crop(percent=(0, 0.05))), # crop images by 0-5% of their height/width
             sometimes(iaa.Affine(
-                scale={"x": (0.8, 1.2), "y": (0.8, 1.2)}, # scale images to 80-120% of their size, individually per axis
+                scale={"x": (0.9, 1.21), "y": (0.9, 1.1)}, # scale images to 90-110% of their size, individually per axis
                 translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, # translate by -20 to +20 percent (per axis)
-                #rotate=(-45, 45), # rotate by -45 to +45 degrees
                 shear=(-10, 10), # shear by -12 to +12 degrees
                 order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
                 #cval=(0, 255), # if mode is constant, use a cval between 0 and 255
@@ -290,9 +289,9 @@ class InputHelper(object):
             )),
             # execute 0 to 5 of the following (less important) augmenters per image
             # don't execute all of them, as that would often be way too strong
-            iaa.SomeOf((3, 5),
+            iaa.SomeOf((2, 5),
                 [
-                    sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
+                    #sometimes(iaa.Superpixels(p_replace=(0, 1.0), n_segments=(20, 200))), # convert images into their superpixel representation
                     iaa.OneOf([
                         iaa.GaussianBlur((0, 3.0)), # blur images with a sigma between 0 and 3.0
                         iaa.AverageBlur(k=(2, 7)), # blur image using local means with kernel sizes between 2 and 7
