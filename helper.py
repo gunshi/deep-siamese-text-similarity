@@ -167,8 +167,8 @@ class InputHelper(object):
     def load_preprocess_images(self, side1_paths, side2_paths, conv_model_spec, epoch, is_train=True):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
-            seq_det1 = self.seq_det[epoch%10] # call this for each batch again, NOT only once at the start
-            seq_det2 = self.seq_det[epoch%10] # call this for each batch again, NOT only once at the start
+            seq_det1 = self.seq_det[epoch%5] # call this for each batch again, NOT only once at the start
+            seq_det2 = self.seq_det[epoch%5] # call this for each batch again, NOT only once at the start
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
@@ -320,7 +320,7 @@ class InputHelper(object):
 
     def data_augmentations(self):
         seq_det = []
-        for i in range(10):
+        for i in range(5):
             seq_det.append(self.train_seq.to_deterministic())
         self.seq_det = seq_det
 
