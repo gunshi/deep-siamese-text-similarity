@@ -153,7 +153,7 @@ class InputHelper(object):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
 
-                processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch, ,is_train)
+                processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch ,is_train)
                 yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index])
     
     
@@ -221,6 +221,7 @@ class InputHelper(object):
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
         simplify='same' #'inverse','none'
         self.apply_image_augmentations()
+        self.data_augmentations()
         x1, x2, y, num_pos, num_neg =self.getTsvData(training_paths, max_document_length, simplify)
         num_total = num_pos + num_neg
 
@@ -239,7 +240,7 @@ class InputHelper(object):
         print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
      
         # Randomly shuffle data
-        np.random.seed(131)
+        #np.random.seed(131)
         shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
         x1_train = x1_train_ordered[shuffle_indices]
         x2_train = x2_train_ordered[shuffle_indices]
