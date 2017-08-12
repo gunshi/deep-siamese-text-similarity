@@ -119,14 +119,9 @@ class InputHelper(object):
         # positive samples from file
         num_positive_samples = len(l)
         for i in range(0, num_positive_samples, 2):
-            if random() > 0.5:
-                x1.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
-                x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
-            else:
-                x1.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
-                x2.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
-
-            y.append(1)#np.array([0,1]))
+            x1.append(self.getfilenames(l[i], base_filepath, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
+            y.append(1)
 
         return np.asarray(x1),np.asarray(x2),np.asarray(y)  
  
@@ -169,7 +164,7 @@ class InputHelper(object):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
             seq_det1 = self.seq_det[epoch%5] # call this for each batch again, NOT only once at the start
-            seq_det2 = self.seq_det[epoch%5] # call this for each batch again, NOT only once at the start
+            seq_det2 = self.seq_det[epoch%5] 
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
@@ -192,31 +187,12 @@ class InputHelper(object):
 
         #misc.imsave('temp1.png', np.vstack([np.hstack(batch1_seq),np.hstack(batch2_seq)]))
    
-        #print(type(batch1_seq), type(np.asarray(batch1_seq)), np.shape(np.asarray(batch1_seq))) 
-        #print(type(batch2_seq), type(np.asarray(batch2_seq)), np.shape(np.asarray(batch2_seq))) 
         temp =  [np.asarray(batch1_seq), np.asarray(batch2_seq)]
         return temp
-
-    def dumpValidation(self,x1,x2,y,shuffled_index,dev_idx,i):
-        print("dumping validation "+str(i))
-        x1_shuffled=x1[shuffled_index]
-        x2_shuffled=x2[shuffled_index]
-        y_shuffled=y[shuffled_index]
-        x1_dev=x1_shuffled[dev_idx:]
-        x2_dev=x2_shuffled[dev_idx:]
-        y_dev=y_shuffled[dev_idx:]
-        del x1_shuffled
-        del y_shuffled
-        with open('validation.txt'+str(i),'w') as f:
-            for text1,text2,label in zip(x1_dev,x2_dev,y_dev):
-                f.write(str(label)+"\t"+text1+"\t"+text2+"\n")
-            f.close()
-        del x1_dev
-        del y_dev
     
+
     # Data Preparatopn
     # ==================================================
-    
     
     def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
         simplify='same' #'inverse','none'
@@ -253,7 +229,6 @@ class InputHelper(object):
         #x2_dev = x2_dev_ordered[shuffle_indices]
         #y_dev = y_dev_ordered[shuffle_indices]
 
-        #self.dumpValidation(x1,x2,y,shuffle_indices,dev_idx,0)
         del x1
         del x2
 
