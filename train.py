@@ -21,6 +21,7 @@ tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (defau
 tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
 tf.flags.DEFINE_string("training_file_path", "/data4/abhijeet/gta/final/", "training folder (default: /home/halwai/gta_data/final)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
+tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
@@ -154,20 +155,13 @@ with tf.Graph().as_default():
         [x1_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x1_batch})
         [x2_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x2_batch})
 
-        if random()>0.5:
-            feed_dict = {
-                             siameseModel.input_x1: x1_batch,
-                             siameseModel.input_x2: x2_batch,
-                             siameseModel.input_y: y_batch,
-                             siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
-            }
-        else:
-            feed_dict = {
-                             siameseModel.input_x1: x2_batch,
-                             siameseModel.input_x2: x1_batch,
-                             siameseModel.input_y: y_batch,
-                             siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
-            }
+        feed_dict = {
+                         siameseModel.input_x1: x1_batch,
+                         siameseModel.input_x2: x2_batch,
+                         siameseModel.input_y: y_batch,
+                         siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
+        }
+
         _, step, loss, dist, summary = sess.run([tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
@@ -183,20 +177,13 @@ with tf.Graph().as_default():
         [x1_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x1_batch})
         [x2_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x2_batch})
 
-        if random()>0.5:
-            feed_dict = {
-                             siameseModel.input_x1: x1_batch,
-                             siameseModel.input_x2: x2_batch,
-                             siameseModel.input_y: y_batch,
-                             siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
-            }
-        else:
-            feed_dict = {
-                             siameseModel.input_x1: x2_batch,
-                             siameseModel.input_x2: x1_batch,
-                             siameseModel.input_y: y_batch,
-                             siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
-            }
+        feed_dict = {
+                         siameseModel.input_x1: x1_batch,
+                         siameseModel.input_x2: x2_batch,
+                         siameseModel.input_y: y_batch,
+                         siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
+        }
+       
         step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,siameseModel.out1,siameseModel.out2],  feed_dict)
         #np.save(lstm_savepath+'/out1_'+str(dev_iter)+'_'+str(epoch),out1)
         #np.save(lstm_savepath+'/out2_'+str(dev_iter)+'_'+str(epoch),out2)
