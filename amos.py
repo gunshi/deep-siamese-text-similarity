@@ -4,8 +4,6 @@ from __future__ import print_function
 import tensorflow as tf
 import numpy as np
 from scipy import misc
-import argparse
-#import csv 
 
 class Conv(object): 
     def initalize(self, sess):
@@ -20,34 +18,34 @@ class Conv(object):
                 temp = tf.get_variable('biases')
                 sess.run(temp.assign(pre_trained_weights[k]['biases']))
             
-    def conv(self, input, filter_size, in_channels, out_channels, name, strides, padding, groups):
+    def conv(self, input_, filter_size, in_channels, out_channels, name, strides, padding, groups):
         with tf.variable_scope(name) as scope:
             filt = tf.get_variable('weights', shape=[filter_size, filter_size, int(in_channels/groups), out_channels], trainable=False)
             bias = tf.get_variable('biases',  shape=[out_channels], trainable=False)
         if groups == 1:
-            return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(input, filt, strides=strides, padding=padding), bias))
+            return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(input_, filt, strides=strides, padding=padding), bias))
         else:
-            # Split input and weights and convolve them separately
-            input_groups = tf.split(axis = 3, num_or_size_splits=groups, value=input)
+            # Split input_ and weights and convolve them separately
+            input_groups = tf.split(axis = 3, num_or_size_splits=groups, value=input_)
             filt_groups = tf.split(axis = 3, num_or_size_splits=groups, value=filt)
             output_groups = [ tf.nn.conv2d( i, k, strides = strides, padding = padding) for i,k in zip(input_groups, filt_groups)]
 
             conv = tf.concat(axis = 3, values = output_groups)
             return tf.nn.relu(tf.nn.bias_add(conv, bias))
 
-    def fc(self, input, in_channels, out_channels, name, relu):
-        input = tf.reshape(input , [-1, in_channels])
+    def fc(self, input_, in_channels, out_channels, name, relu):
+        input_ = tf.reshape(input_ , [-1, in_channels])
         with tf.variable_scope(name) as scope:
             filt = tf.get_variable('weights', shape=[in_channels , out_channels], trainable=False)
             bias = tf.get_variable('biases',  shape=[out_channels], trainable=False)
         if relu:
-            return tf.nn.relu(tf.nn.bias_add(tf.matmul(input, filt), bias))
+            return tf.nn.relu(tf.nn.bias_add(tf.matmul(input_, filt), bias))
         else:
-            return tf.nn.bias_add(tf.matmul(input, filt), bias)
+            return tf.nn.bias_add(tf.matmul(input_, filt), bias)
         
 
-    def pool(self, input, padding, name):
-        return tf.nn.max_pool(input, ksize=[1,3,3,1], strides=[1,2,2,1], padding=padding, name= name)
+    def pool(self, input_, padding, name):
+        return tf.nn.max_pool(input_, ksize=[1,3,3,1], strides=[1,2,2,1], padding=padding, name= name)
 
 
 
