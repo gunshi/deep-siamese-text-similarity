@@ -13,6 +13,7 @@ import imgaug as ia
 from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 import matplotlib
+from random import random
 matplotlib.use('Agg')
 import matplotlib.pyplot as pyplot
 reload(sys)
@@ -50,7 +51,8 @@ class InputHelper(object):
 
         # Loading Positive sample file
         train_data=[]
-        with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+        with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
@@ -91,11 +93,12 @@ class InputHelper(object):
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
-            x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
-            x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
-            y.append(0)#np.array([0,1]))
-        
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, len(l_neg)//2
+            if random() > 0.9:
+                x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
+                x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
+                y.append(0)#np.array([0,1]))
+        l_neg = len(x1) - len(l_pos)
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg//2
 
 
     def getTsvTestData(self, base_filepath, max_document_length):
@@ -168,8 +171,8 @@ class InputHelper(object):
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
-                img_resized = misc.imresize(np.asarray(img_aug), conv_model_spec[1])
-                img_normalized = self.normalize_input(img_normalized, conv_model_spec)
+                img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
+                img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 if is_train==True:
                     img_aug = seq_det1.augment_images(np.expand_dims(img_normalized,axis=0))
                     batch1_seq.append(img_aug[0])
@@ -200,6 +203,7 @@ class InputHelper(object):
         self.data_augmentations()
         x1, x2, y, num_pos, num_neg =self.getTsvData(training_paths, max_document_length, simplify)
         num_total = num_pos + num_neg
+        print(num_pos, num_neg)
 
         i1=0
         train_set=[]

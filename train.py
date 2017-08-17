@@ -25,7 +25,7 @@ tf.flags.DEFINE_string("name", "result", "prefix names of the output files(defau
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 25, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
@@ -90,7 +90,7 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        learning_rate=tf.train.exponential_decay(1e-2, global_step, 200, 0.95, staircase=False, name=None)
+        learning_rate=tf.train.exponential_decay(1e-3, global_step, sum_no_of_batches, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(learning_rate)
         print("initialized convModel and siameseModel object")
     
