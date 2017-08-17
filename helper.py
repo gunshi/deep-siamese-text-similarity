@@ -168,22 +168,22 @@ class InputHelper(object):
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
-                img_normalized = self.normalize_input(img_org, conv_model_spec)
-                img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
+                img_resized = misc.imresize(np.asarray(img_aug), conv_model_spec[1])
+                img_normalized = self.normalize_input(img_normalized, conv_model_spec)
                 if is_train==True:
-                    img_aug = seq_det1.augment_images(np.expand_dims(img_resized,axis=0))
+                    img_aug = seq_det1.augment_images(np.expand_dims(img_normalized,axis=0))
                     batch1_seq.append(img_aug[0])
                 else: 
-                    batch1_seq.append(img_resized)
+                    batch1_seq.append(img_normalized)
 
                 img_org = misc.imread(side2_img_path)
-                img_normalized = self.normalize_input(img_org, conv_model_spec)
-                img_resized = misc.imresize(np.asarray(img_normalized), conv_model_spec[1])
+                img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
+                img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 if is_train==True:
-                    img_aug = seq_det2.augment_images(np.expand_dims(img_resized, axis=0))
+                    img_aug = seq_det2.augment_images(np.expand_dims(img_normalized, axis=0))
                     batch2_seq.append(img_aug[0])
                 else:
-                    batch2_seq.append(img_resized)
+                    batch2_seq.append(img_normalized)
 
         #misc.imsave('temp1.png', np.vstack([np.hstack(batch1_seq),np.hstack(batch2_seq)]))
    
