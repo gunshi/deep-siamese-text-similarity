@@ -20,8 +20,8 @@ class Conv(object):
             
     def conv(self, input_, filter_size, in_channels, out_channels, name, strides, padding, groups):
         with tf.variable_scope(name) as scope:
-            filt = tf.get_variable('weights', shape=[filter_size, filter_size, int(in_channels/groups), out_channels], trainable=False)
-            bias = tf.get_variable('biases',  shape=[out_channels], trainable=False)
+            filt = tf.get_variable('weights', shape=[filter_size, filter_size, int(in_channels/groups), out_channels], trainable=self.trainable)
+            bias = tf.get_variable('biases',  shape=[out_channels], trainable=self.trainable)
         if groups == 1:
             return tf.nn.relu(tf.nn.bias_add(tf.nn.conv2d(input_, filt, strides=strides, padding=padding), bias))
         else:
@@ -36,8 +36,8 @@ class Conv(object):
     def fc(self, input_, in_channels, out_channels, name, relu):
         input_ = tf.reshape(input_ , [-1, in_channels])
         with tf.variable_scope(name) as scope:
-            filt = tf.get_variable('weights', shape=[in_channels , out_channels], trainable=False)
-            bias = tf.get_variable('biases',  shape=[out_channels], trainable=False)
+            filt = tf.get_variable('weights', shape=[in_channels , out_channels], trainable=self.trainable)
+            bias = tf.get_variable('biases',  shape=[out_channels], trainable=self.trainable)
         if relu:
             return tf.nn.relu(tf.nn.bias_add(tf.matmul(input_, filt), bias))
         else:
@@ -91,6 +91,7 @@ class Conv(object):
         self.max_frames = max_frames
         self.layer = layer
         self.weight_path = weight_path
+        self.trainable = True
 
         mean = [104, 114, 124]
         scale_size = (227,227)

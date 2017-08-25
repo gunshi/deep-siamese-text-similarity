@@ -93,12 +93,12 @@ class InputHelper(object):
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
-            if random() > 0.9:
+            if random() > 0.91:
                 x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
                 x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
                 y.append(0)#np.array([0,1]))
-        l_neg = len(x1) - len(l_pos)
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg//2
+        l_neg = len(x1) - len(l_pos)//2
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg
 
 
     def getTsvTestData(self, base_filepath, max_document_length):

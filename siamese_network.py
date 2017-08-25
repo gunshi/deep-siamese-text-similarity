@@ -6,11 +6,11 @@ class SiameseLSTM(object):
     A LSTM based deep Siamese network for text similarity.
     Uses an character embedding layer, followed by a biLSTM and Energy Loss layer.
     """
-    def LSTMcell(self, n_hidden, reuse): 
+    def LSTMcell(self, n_hidden, reuse=True):
         if  reuse:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden, reuse=reuse)
         else:
-            return tf.contrib.rnn.BasicLSTMCell(n_hidden,)
+            return tf.contrib.rnn.BasicLSTMCell(n_hidden)
 
     def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, num_lstm_layers, hidden_unit_dim, reuse):
         n_input=embedding_size
@@ -35,7 +35,7 @@ class SiameseLSTM(object):
         with tf.name_scope("fw"+scope),tf.variable_scope("fw"+scope):
             stacked_rnn_fw = []
             for _ in range(n_layers):
-                fw_cell = self.LSTMcell(n_hidden, reuse)
+                fw_cell = self.LSTMcell(n_hidden, reuse=reuse)
                 lstm_fw_cell = tf.contrib.rnn.DropoutWrapper(fw_cell,output_keep_prob=dropout)
                 stacked_rnn_fw.append(lstm_fw_cell)
             lstm_fw_cell_m = tf.contrib.rnn.MultiRNNCell(cells=stacked_rnn_fw, state_is_tuple=True)
@@ -43,7 +43,7 @@ class SiameseLSTM(object):
         with tf.name_scope("bw"+scope),tf.variable_scope("bw"+scope):
             stacked_rnn_bw = []
             for _ in range(n_layers):
-                bw_cell = self.LSTMcell(n_hidden, reuse)
+                bw_cell = self.LSTMcell(n_hidden, reuse=reuse)
                 #bw_cell = tf.contrib.rnn.BasicLSTMCell(n_hidden, forget_bias=1.0, state_is_tuple=True, reuse=tf.get_variable_scope().reuse)
                 lstm_bw_cell = tf.contrib.rnn.DropoutWrapper(bw_cell,output_keep_prob=dropout)
                 stacked_rnn_bw.append(lstm_bw_cell)

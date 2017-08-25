@@ -24,13 +24,13 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 8, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
+tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
-tf.flags.DEFINE_boolean("projection", True, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
+tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
@@ -54,7 +54,7 @@ if FLAGS.training_file_path==None:
     exit()
 
 inpH = InputHelper()
-train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 10, FLAGS.batch_size)
+train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 3, FLAGS.batch_size)
 
 
 # Training
@@ -90,7 +90,7 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        learning_rate=tf.train.exponential_decay(1e-3, global_step, sum_no_of_batches, 0.95, staircase=False, name=None)
+        learning_rate=tf.train.exponential_decay(1e-5, global_step, sum_no_of_batches*5, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(learning_rate)
         print("initialized convModel and siameseModel object")
     
@@ -197,7 +197,7 @@ with tf.Graph().as_default():
 
     # Generate batches
     batches=inpH.batch_iter(
-                train_set[0], train_set[1], train_set[2], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, is_train=True)
+                train_set[0], train_set[1], train_set[2], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, shuffle=True, is_train=False)
 
     ptr=0
     max_validation_correct=0.0

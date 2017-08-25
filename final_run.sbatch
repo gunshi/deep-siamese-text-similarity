@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --partition=cosmos
-#SBATCH --nodelist=blazar
+#SBATCH --nodelist=fusor
 #SBATCH --time=17:00:00
-#SBATCH --gres=gpu:1,gpu_mem:6100
+#SBATCH --gres=gpu:1,gpu_mem:5000
 #SBATCH --mem=6000
 #SBATCH --qos=intermediate
 
@@ -11,5 +11,5 @@ source activate my_venv_2_7
 #python train.py --hidden_dim 10
 #python train.py --hidden_dim 20
 #python train.py --hidden_dim 30
-python train.py --projection=True --hidden_dim=50 --name=6a > result_6a
+python train.py --projection=True --hidden_dim=50 --name=6c > result_6c
 
