@@ -9,8 +9,8 @@ class Conv(object):
     def initalize(self, sess):
         pre_trained_weights = np.load(open(self.weight_path, "rb"), encoding="latin1").item()
         keys = sorted(pre_trained_weights.keys())
-        for k in keys:
-        #for k in list(filter(lambda x: 'conv' in x,keys)):
+        #for k in keys:
+        for k in list(filter(lambda x: 'conv' in x,keys)):
             with tf.variable_scope(k, reuse=True):
                 temp = tf.get_variable('weights')
                 sess.run(temp.assign(pre_trained_weights[k]['weights']))
@@ -76,11 +76,11 @@ class Conv(object):
         net_layers['pool6'] = self.pool(net_layers['conv6'], padding='VALID', name='pool6')
         
         # FC layers
-        net_layers['fc7'] = self.fc(net_layers['pool6'],  6*6*256, 4096, name='fc7_new', relu = 1)
-        net_layers['fc8'] = self.fc(net_layers['fc7'], 4096, 2543, name='fc8_new', relu = 0)
+        #net_layers['fc7'] = self.fc(net_layers['pool6'],  6*6*256, 4096, name='fc7_new', relu = 1)
+        #net_layers['fc8'] = self.fc(net_layers['fc7'], 4096, 2543, name='fc8_new', relu = 0)
 
-        net_layers['prob'] = tf.nn.softmax(net_layers['fc8'])
-        net_layers['pred'] = tf.argmax(tf.nn.softmax(net_layers['fc8']), axis = 1)
+        #net_layers['prob'] = tf.nn.softmax(net_layers['fc8'])
+        #net_layers['pred'] = tf.argmax(tf.nn.softmax(net_layers['fc8']), axis = 1)
 
         self.net_layers = net_layers
 

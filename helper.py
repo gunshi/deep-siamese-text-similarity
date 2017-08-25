@@ -42,7 +42,8 @@ class InputHelper(object):
         x1=[]
         x2=[]
         y=[]
-        
+        video_lengths = []
+
         #load all the mapping dictonaries
         mapping_dict = {}
         print(base_filepath+'mapping_file')
@@ -51,8 +52,8 @@ class InputHelper(object):
 
         # Loading Positive sample file
         train_data=[]
-        #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
-        with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
+        with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
+        #with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
@@ -72,8 +73,9 @@ class InputHelper(object):
         for exampleIter in range(0,len(train_data),7):
             if(simplify!='none'):
                 if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
-                    l_pos.append(' '.join(train_data[exampleIter+1]))
-                    l_pos.append(' '.join(train_data[exampleIter+2]))
+                    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
+                        l_pos.append(' '.join(train_data[exampleIter+1]))
+                        l_pos.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
@@ -82,6 +84,7 @@ class InputHelper(object):
             x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(1)#np.array([0,1]))
+            video_lengths.append(len(l_pos[i].strip().split(" ")))
 
         # Loading Negative sample file
         l_neg = []
@@ -93,12 +96,14 @@ class InputHelper(object):
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
-            if random() > 0.91:
-                x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
-                x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
-                y.append(0)#np.array([0,1]))
+            #if random() > 0.91:
+            x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
+            y.append(0)#np.array([0,1]))
+            video_lengths.append(len(l_neg[i].strip().split(" ")))
+
         l_neg = len(x1) - len(l_pos)//2
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg, np.asarray(video_lengths)
 
 
     def getTsvTestData(self, base_filepath, max_document_length):
@@ -128,7 +133,7 @@ class InputHelper(object):
 
         return np.asarray(x1),np.asarray(x2),np.asarray(y)  
  
-    def batch_iter(self, x1, x2, y, batch_size, num_epochs, conv_model_spec, shuffle=True, is_train=True):
+    def batch_iter(self, x1, x2, y, video_lengths, batch_size, num_epochs, conv_model_spec, shuffle=True, is_train=True):
         """
         Generates a batch iterator for a dataset.
         """
@@ -143,17 +148,19 @@ class InputHelper(object):
                 x1_shuffled=x1[shuffle_indices]
                 x2_shuffled=x2[shuffle_indices]
                 y_shuffled=y[shuffle_indices]
+                video_lengths_shuffled = video_lengths[shuffle_indices]
             else:
                 x1_shuffled=x1
                 x2_shuffled=x2
                 y_shuffled=y
+                video_lengths_shuffled = video_lengths
             for batch_num in range(num_batches_per_epoch):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
                 #print(y_shuffled[start_index:end_index])
 
                 processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch ,is_train)
-                yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index])
+                yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index], video_lengths_shuffled[start_index:end_index])
     
     
     def normalize_input(self, img, conv_model_spec):
@@ -201,7 +208,7 @@ class InputHelper(object):
         simplify='same' #'inverse','none'
         self.apply_image_augmentations()
         self.data_augmentations()
-        x1, x2, y, num_pos, num_neg =self.getTsvData(training_paths, max_document_length, simplify)
+        x1, x2, y, num_pos, num_neg, video_lengths =self.getTsvData(training_paths, max_document_length, simplify)
         num_total = num_pos + num_neg
         print(num_pos, num_neg)
 
@@ -217,14 +224,16 @@ class InputHelper(object):
         x1_train_ordered, x1_dev_ordered = np.asarray([x1[i] for i in train_idx]), np.asarray([x1[i] for i in dev_idx]) 
         x2_train_ordered, x2_dev_ordered = np.asarray([x2[i] for i in train_idx]), np.asarray([x2[i] for i in dev_idx])
         y_train_ordered, y_dev_ordered = np.asarray([y[i] for i in train_idx]), np.asarray([y[i] for i in dev_idx]) 
+        video_lengths_train_ordered, video_lengths_dev_ordered = np.asarray([video_lengths[i] for i in train_idx]), np.asarray([video_lengths[i] for i in dev_idx])
         print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
      
         # Randomly shuffle data
         #np.random.seed(131)
-        shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
-        x1_train = x1_train_ordered[shuffle_indices]
-        x2_train = x2_train_ordered[shuffle_indices]
-        y_train = y_train_ordered[shuffle_indices]
+        #shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
+        #x1_train = x1_train_ordered[shuffle_indices]
+        #x2_train = x2_train_ordered[shuffle_indices]
+        #y_train = y_train_ordered[shuffle_indices]
+        #video_lengths_train = video_lengths_train_ordered[shuffle_indices]
 
         # Randomly shuffle data
         #np.random.seed(131)
@@ -238,8 +247,8 @@ class InputHelper(object):
 
         temp = len(y_train)//batch_size
         sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
-        train_set=(x1_train,x2_train,y_train)
-        dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered)
+        train_set=(x1_train_ordered,x2_train_ordered,y_train_ordered, video_lengths_train_ordered)
+        dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered, video_lengths_dev_ordered)
         gc.collect()
         
         return train_set,dev_set,sum_no_of_batches

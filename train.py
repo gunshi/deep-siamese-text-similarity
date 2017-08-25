@@ -54,7 +54,7 @@ if FLAGS.training_file_path==None:
     exit()
 
 inpH = InputHelper()
-train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 3, FLAGS.batch_size)
+train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 10, FLAGS.batch_size)
 
 
 # Training
@@ -91,7 +91,7 @@ with tf.Graph().as_default():
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         learning_rate=tf.train.exponential_decay(1e-5, global_step, sum_no_of_batches*5, 0.95, staircase=False, name=None)
-        optimizer = tf.train.AdamOptimizer(learning_rate)
+        optimizer = tf.train.AdamOptimizer(1e-5)
         print("initialized convModel and siameseModel object")
     
     grads_and_vars=optimizer.compute_gradients(siameseModel.loss)
@@ -148,7 +148,7 @@ with tf.Graph().as_default():
     train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train', graph=tf.get_default_graph())
     val_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/val' , graph=tf.get_default_graph())
     
-    def train_step(x1_batch, x2_batch, y_batch):
+    def train_step(x1_batch, x2_batch, y_batch, video_lengths):
         
         #A single training step
         
@@ -160,6 +160,7 @@ with tf.Graph().as_default():
                          siameseModel.input_x2: x2_batch,
                          siameseModel.input_y: y_batch,
                          siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
+                         siameseModel.video_lengths: video_lengths,
         }
 
         _, step, loss, dist, summary = sess.run([tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
@@ -170,7 +171,7 @@ with tf.Graph().as_default():
         #print(y_batch, dist, d)
         return summary, np.sum(correct), loss
 
-    def dev_step(x1_batch, x2_batch, y_batch, dev_iter, epoch):
+    def dev_step(x1_batch, x2_batch, y_batch, video_lengths, dev_iter, epoch):
         
         #A single training step
         
@@ -182,6 +183,8 @@ with tf.Graph().as_default():
                          siameseModel.input_x2: x2_batch,
                          siameseModel.input_y: y_batch,
                          siameseModel.dropout_keep_prob: FLAGS.dropout_keep_prob,
+                         siameseModel.video_lengths: video_lengths,
+
         }
        
         step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,siameseModel.out1,siameseModel.out2],  feed_dict)
@@ -197,7 +200,7 @@ with tf.Graph().as_default():
 
     # Generate batches
     batches=inpH.batch_iter(
-                train_set[0], train_set[1], train_set[2], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, shuffle=True, is_train=False)
+                train_set[0], train_set[1], train_set[2], train_set[3], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, shuffle=True, is_train=False)
 
     ptr=0
     max_validation_correct=0.0
@@ -216,7 +219,7 @@ with tf.Graph().as_default():
             x1_batch, x2_batch, y_batch = batches.next()
             if len(y_batch)<1:
                 continue
-            summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch)
+            summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch, video_lengths)
             current_step = tf.train.global_step(sess, global_step)
             train_writer.add_summary(summary, current_step)
             sum_train_correct = sum_train_correct + train_batch_correct    
@@ -232,13 +235,13 @@ with tf.Graph().as_default():
         val_epoch_loss=0.0
         val_results = []
         print("\nEvaluation:")
-        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2], FLAGS.batch_size, 1, convModel.spec, shuffle=False , is_train=False)
+        dev_batches = inpH.batch_iter(dev_set[0],dev_set[1],dev_set[2],dev_set[3], FLAGS.batch_size, 1, convModel.spec, shuffle=False , is_train=False)
         dev_iter=0
-        for (x1_dev_b,x2_dev_b,y_dev_b) in dev_batches:
+        for (x1_dev_b,x2_dev_b,y_dev_b, dev_video_lengths) in dev_batches:
             if len(y_dev_b)<1:
                 continue
             dev_iter += 1
-            summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b,dev_iter,nn)
+            summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b, dev_video_lengths, dev_iter,nn)
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
             val_writer.add_summary(summary, current_step)

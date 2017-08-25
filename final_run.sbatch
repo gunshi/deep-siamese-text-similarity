@@ -11,5 +11,5 @@ source activate my_venv_2_7
 #python train.py --hidden_dim 10
 #python train.py --hidden_dim 20
 #python train.py --hidden_dim 30
-python train.py --projection=True --hidden_dim=50 --name=6c > result_6c
+python train.py --projection=False --hidden_dim=50 --name=7a > result_7a
 
