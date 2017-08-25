@@ -91,7 +91,7 @@ class Conv(object):
         self.max_frames = max_frames
         self.layer = layer
         self.weight_path = weight_path
-        self.trainable = True
+        self.trainable = False
 
         mean = [104, 114, 124]
         scale_size = (227,227)

@@ -24,10 +24,10 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
+tf.flags.DEFINE_integer("batch_size", 2, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
-tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
+tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
@@ -216,7 +216,7 @@ with tf.Graph().as_default():
         sum_train_correct=0.0
         train_epoch_loss=0.0
         for kk in xrange(sum_no_of_batches):
-            x1_batch, x2_batch, y_batch = batches.next()
+            x1_batch, x2_batch, y_batch, video_lengths = batches.next()
             if len(y_batch)<1:
                 continue
             summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch, video_lengths)

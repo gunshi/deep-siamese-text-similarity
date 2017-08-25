@@ -245,8 +245,8 @@ class InputHelper(object):
         del x1
         del x2
 
-        temp = len(y_train)//batch_size
-        sum_no_of_batches = temp + 1 if len(y_train%batch_size) else temp
+        temp = len(y_train_ordered)//batch_size
+        sum_no_of_batches = temp + 1 if len(y_train_ordered%batch_size) else temp
         train_set=(x1_train_ordered,x2_train_ordered,y_train_ordered, video_lengths_train_ordered)
         dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered, video_lengths_dev_ordered)
         gc.collect()

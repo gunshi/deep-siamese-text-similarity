@@ -6,13 +6,19 @@ class SiameseLSTM(object):
     A LSTM based deep Siamese network for text similarity.
     Uses an character embedding layer, followed by a biLSTM and Energy Loss layer.
     """
+    def extract_axis(self, data, ind):
+        batch_range = tf.range(tf.shape(data)[0])
+        indices = tf.stack([batch_range, ind], axis = 1)
+        res = tf.gather_nd(data, indices)
+        return res
+
     def LSTMcell(self, n_hidden, reuse=True):
         if  reuse:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden, reuse=reuse)
         else:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden)
 
-    def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, num_lstm_layers, hidden_unit_dim, reuse, video_lengths):
+    def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, video_lengths, num_lstm_layers, hidden_unit_dim, reuse):
         n_input=embedding_size
         n_steps=sequence_length
         #n_hidden layer_ number of features
@@ -24,12 +30,11 @@ class SiameseLSTM(object):
         # Current data input shape: (batch_size, n_steps, n_input) (?, seq_len, embedding_size)
         # Required shape: 'n_steps' tensors list of shape (batch_size, n_input)
         # Permuting batch_size and n_steps
-        x = tf.transpose(x, [1, 0, 2])
+        #x = tf.transpose(x, [1, 0, 2])
         # Reshape to (n_steps*batch_size, n_input)
-        x = tf.reshape(x, [-1, n_input])
+        #x = tf.reshape(x, [-1, n_input])
         # Split to get a list of 'n_steps' tensors of shape (batch_size, n_input)
-        x = tf.split(x, n_steps, axis = 0)
-
+        #x = tf.split(x, n_steps, axis = 0)
         # Define lstm cells with tensorflow
         # Forward direction cell
         with tf.name_scope("fw"+scope),tf.variable_scope("fw"+scope):
@@ -52,8 +57,14 @@ class SiameseLSTM(object):
         # Get lstm cell output
         with tf.name_scope("bw"+scope),tf.variable_scope("bw"+scope):
             #outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell_m, lstm_bw_cell_m, x, dtype=tf.float32)
-            outputs, _, _ = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, x, dtype=tf.float32, sequence_length=video_lengths)
-        return outputs[-1]
+            outputs, states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, inputs= x, dtype=tf.float32,sequence_length=video_lengths)
+            outputs = tf.concat(outputs, 2)
+            print(outputs)
+            outputs = self.extract_axis(outputs, video_lengths - 1)
+            print(outputs)
+        return outputs
+        #print(states[0][0].c)
+        #return states[0][0].c
     
     def contrastive_loss(self, y,d,batch_size):
         tmp= y *tf.square(d)
@@ -78,7 +89,7 @@ class SiameseLSTM(object):
       self.input_x1 = tf.placeholder(tf.float32, [None, input_size], name="input_x1")
       self.input_x2 = tf.placeholder(tf.float32, [None, input_size], name="input_x2")
       self.input_y = tf.placeholder(tf.float32, [None], name="input_y")
-      self.video_lengths = tf.placeholdef(tf.int32, [None], name="video_lengths")
+      self.video_lengths = tf.placeholder(tf.int32, [None], name="video_lengths")
       self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
 
       # Keeping track of l2 regularization loss (optional)
@@ -106,6 +117,8 @@ class SiameseLSTM(object):
 
 
       # define distance and loss functions
+      epsilon = tf.constant(1e-20)
+
       if loss == "AAAI":
         with tf.name_scope("output"):
           self.distance = tf.reduce_sum(tf.abs(tf.subtract(self.out1,self.out2)),1,keep_dims=True)
@@ -115,7 +128,7 @@ class SiameseLSTM(object):
           self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)/batch_size
       elif loss == "contrastive":
         with tf.name_scope("output"):
-          self.distance = tf.sqrt(tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
+          self.distance = tf.sqrt(epsilon + tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
           self.distance = tf.div(self.distance, tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
           self.distance = tf.reshape(self.distance, [-1], name="distance")
         with tf.name_scope("loss"):
