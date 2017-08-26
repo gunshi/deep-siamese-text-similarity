@@ -18,7 +18,7 @@ class SiameseLSTM(object):
         else:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden)
 
-    def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, video_lengths, num_lstm_layers, hidden_unit_dim, reuse):
+    def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, video_lengths, num_lstm_layers, hidden_unit_dim, reuse, return_outputs):
         n_input=embedding_size
         n_steps=sequence_length
         #n_hidden layer_ number of features
@@ -62,9 +62,11 @@ class SiameseLSTM(object):
             print(outputs)
             outputs = self.extract_axis(outputs, video_lengths-1)
             print(outputs)
-        return outputs
-        #print(states[0][0].c)
-        #return states[0][0].c
+        if return_outputs:
+            return outputs
+        else:
+            print(states[0][0].c)
+            return states[0][0].c
     
     def contrastive_loss(self, y,d,batch_size):
         tmp= y *tf.square(d)
@@ -83,7 +85,7 @@ class SiameseLSTM(object):
 
     
     def __init__(
-      self, sequence_length, input_size, embedding_size, l2_reg_lambda, batch_size, num_lstm_layers, hidden_unit_dim, loss, projection):
+      self, sequence_length, input_size, embedding_size, l2_reg_lambda, batch_size, num_lstm_layers, hidden_unit_dim, loss, projection, return_outputs):
 
       # Placeholders for input, output and dropout
       self.input_x1 = tf.placeholder(tf.float32, [None, input_size], name="input_x1")
@@ -112,8 +114,8 @@ class SiameseLSTM(object):
 
       # Create a convolution + maxpool layer for each filter size
       with tf.name_scope("output"):
-        self.out1=self.BiRNN(self.embedding1, self.dropout_keep_prob, "side1", embedding_size, sequence_length, self.video_lengths, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=False)
-        self.out2=self.BiRNN(self.embedding2, self.dropout_keep_prob, "side1", embedding_size, sequence_length, self.video_lengths, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=True)
+        self.out1=self.BiRNN(self.embedding1, self.dropout_keep_prob, "side1", embedding_size, sequence_length, self.video_lengths, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=False, return_outputs=return_outputs)
+        self.out2=self.BiRNN(self.embedding2, self.dropout_keep_prob, "side1", embedding_size, sequence_length, self.video_lengths, num_lstm_layers=num_lstm_layers, hidden_unit_dim=hidden_unit_dim, reuse=True, return_outputs=return_outputs)
 
 
       # define distance and loss functions

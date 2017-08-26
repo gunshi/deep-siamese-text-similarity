@@ -25,16 +25,19 @@ tf.flags.DEFINE_string("name", "result", "prefix names of the output files(defau
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 20, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
+tf.flags.DEFINE_boolean("conv_net_training", False, "Training ConvNet (Default: False)")
+tf.flags.DEFINE_float("lr", 0.00001, "learning-rate(default: 0.00001)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+tf.flags.DEFINE_boolean("return_outputs", False, "Outpust from LSTM, True=>Last LSMT output, False=> Cell-State Output(default: False)")
 tf.flags.DEFINE_string("summaries_dir", "/data4/abhijeet/gta/summaries/", "Summary storage")
 
 #Conv Net Parameters
@@ -74,7 +77,8 @@ with tf.Graph().as_default():
          FLAGS.conv_layer,
          FLAGS.conv_layer_weight_pretrained_path,
          FLAGS.batch_size,
-         FLAGS.max_frames)
+         FLAGS.max_frames,
+         FLAGS.conv_net_training)
 
         siameseModel = SiameseLSTM(
             sequence_length=FLAGS.max_frames,
@@ -85,19 +89,20 @@ with tf.Graph().as_default():
             num_lstm_layers=FLAGS.num_lstm_layers,
             hidden_unit_dim=FLAGS.hidden_dim,
             loss=FLAGS.loss,
-            projection=FLAGS.projection)
+            projection=FLAGS.projection,
+            return_outputs=FLAGS.return_outputs)
         
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         learning_rate=tf.train.exponential_decay(1e-5, global_step, sum_no_of_batches*5, 0.95, staircase=False, name=None)
-        optimizer = tf.train.AdamOptimizer(1e-5)
-        print("initialized convModel and siameseModel object")
+        optimizer = tf.train.AdamOptimizer(FLAGS.lr)
+        print("initialized convmodel and siamesemodel object")
     
     grads_and_vars=optimizer.compute_gradients(siameseModel.loss)
     tr_op_set = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
     print("defined training_ops")
-    # Keep track of gradient values and sparsity (optional)
+    # keep track of gradient values and sparsity (optional)
     grad_summaries = []
     for g, v in grads_and_vars:
         if g is not None:

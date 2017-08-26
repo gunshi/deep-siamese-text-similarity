@@ -86,12 +86,12 @@ class Conv(object):
 
 
 
-    def __init__(self, layer, weight_path, batch_size, max_frames):
+    def __init__(self, layer, weight_path, batch_size, max_frames, trainable):
         self.batch_size = batch_size
         self.max_frames = max_frames
         self.layer = layer
         self.weight_path = weight_path
-        self.trainable = False
+        self.trainable = trainable
 
         mean = [104, 114, 124]
         scale_size = (227,227)
