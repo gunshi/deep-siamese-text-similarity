@@ -73,9 +73,9 @@ class InputHelper(object):
         for exampleIter in range(0,len(train_data),7):
             if(simplify!='none'):
                 if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
-                    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
-                        l_pos.append(' '.join(train_data[exampleIter+1]))
-                        l_pos.append(' '.join(train_data[exampleIter+2]))
+                #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
+                    l_pos.append(' '.join(train_data[exampleIter+1]))
+                    l_pos.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
@@ -84,7 +84,8 @@ class InputHelper(object):
             x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(1)#np.array([0,1]))
-            video_lengths.append(len(l_pos[i].strip().split(" ")))
+            temp_length = len(l_pos[i].strip().split(" "))
+            video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
 
         # Loading Negative sample file
         l_neg = []
@@ -100,7 +101,8 @@ class InputHelper(object):
             x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(0)#np.array([0,1]))
-            video_lengths.append(len(l_neg[i].strip().split(" ")))
+            temp_length = len(l_neg[i].strip().split(" "))
+            video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
 
         l_neg = len(x1) - len(l_pos)//2
         return np.asarray(x1),np.asarray(x2),np.asarray(y), len(l_pos)//2, l_neg, np.asarray(video_lengths)

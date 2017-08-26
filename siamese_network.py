@@ -60,7 +60,7 @@ class SiameseLSTM(object):
             outputs, states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, inputs= x, dtype=tf.float32,sequence_length=video_lengths)
             outputs = tf.concat(outputs, 2)
             print(outputs)
-            outputs = self.extract_axis(outputs, video_lengths - 1)
+            outputs = self.extract_axis(outputs, video_lengths-1)
             print(outputs)
         return outputs
         #print(states[0][0].c)
@@ -117,7 +117,7 @@ class SiameseLSTM(object):
 
 
       # define distance and loss functions
-      epsilon = tf.constant(1e-20)
+      epsilon = tf.constant(1e-30)
 
       if loss == "AAAI":
         with tf.name_scope("output"):
@@ -128,7 +128,7 @@ class SiameseLSTM(object):
           self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)/batch_size
       elif loss == "contrastive":
         with tf.name_scope("output"):
-          self.distance = tf.sqrt(epsilon + tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
+          self.distance = tf.sqrt(epsilon+ tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
           self.distance = tf.div(self.distance, tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
           self.distance = tf.reshape(self.distance, [-1], name="distance")
         with tf.name_scope("loss"):
@@ -136,5 +136,4 @@ class SiameseLSTM(object):
       else:
         raise ValueError(" Loss function is not-defined")
 
-      tf.summary.scalar('loss', self.loss) 
-   
+      tf.summary.scalar('loss', self.loss)

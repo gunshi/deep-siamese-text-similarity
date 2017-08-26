@@ -24,7 +24,7 @@ tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 2, "Batch Size (default: 10)")
+tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 5, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
@@ -163,12 +163,14 @@ with tf.Graph().as_default():
                          siameseModel.video_lengths: video_lengths,
         }
 
-        _, step, loss, dist, summary = sess.run([tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
+        out1, out2, _, step, loss, dist, summary = sess.run([siameseModel.out1, siameseModel.out2, tr_op_set, global_step, siameseModel.loss, siameseModel.distance, summaries_merged],  feed_dict)
         time_str = datetime.datetime.now().isoformat()
         d=compute_distance(dist, FLAGS.loss)
         correct = y_batch==d
+        #print(out1, out2)
+        #print(video_lengths)
         #print("TRAIN {}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, correct))
-        #print(y_batch, dist, d)
+        print(y_batch, dist, d)
         return summary, np.sum(correct), loss
 
     def dev_step(x1_batch, x2_batch, y_batch, video_lengths, dev_iter, epoch):
