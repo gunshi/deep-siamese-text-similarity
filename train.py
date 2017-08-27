@@ -218,25 +218,6 @@ with tf.Graph().as_default():
 
 
     for nn in xrange(FLAGS.num_epochs):
-        print("Epoch Number: {}".format(nn))
-        epoch_start_time = time.time()
-        sum_train_correct=0.0
-        train_epoch_loss=0.0
-        for kk in xrange(sum_no_of_batches):
-            x1_batch, x2_batch, y_batch, video_lengths = batches.next()
-            if len(y_batch)<1:
-                continue
-            summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch, video_lengths)
-            current_step = tf.train.global_step(sess, global_step)
-            train_writer.add_summary(summary, current_step)
-            sum_train_correct = sum_train_correct + train_batch_correct    
-            train_epoch_loss = train_epoch_loss + train_batch_loss* len(y_batch)
-            train_batch_loss_arr.append(train_batch_loss*len(y_batch))
-        print("train_loss ={}".format(train_epoch_loss/len(train_set[2])))
-        print("total_train_correct={}/total_train={}".format(sum_train_correct, len(train_set[2])))
-        train_accuracy.append(sum_train_correct*1.0/len(train_set[2]))
-        train_loss.append(train_epoch_loss/len(train_set[2]))
-
         # Evaluate on Validataion Data for every epoch
         sum_val_correct=0.0
         val_epoch_loss=0.0
@@ -251,6 +232,7 @@ with tf.Graph().as_default():
             summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b, dev_video_lengths, dev_iter,nn)
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
+            current_step = tf.train.global_step(sess, global_step)
             val_writer.add_summary(summary, current_step)
             val_epoch_loss = val_epoch_loss + val_batch_loss*len(y_dev_b)
             val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
@@ -259,6 +241,24 @@ with tf.Graph().as_default():
         val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
     
+        print("Epoch Number: {}".format(nn))
+        epoch_start_time = time.time()
+        sum_train_correct=0.0
+        train_epoch_loss=0.0
+        for kk in xrange(sum_no_of_batches):
+            x1_batch, x2_batch, y_batch, video_lengths = batches.next()
+            if len(y_batch)<1:
+                continue
+            summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch, video_lengths)
+            train_writer.add_summary(summary, current_step)
+            sum_train_correct = sum_train_correct + train_batch_correct    
+            train_epoch_loss = train_epoch_loss + train_batch_loss* len(y_batch)
+            train_batch_loss_arr.append(train_batch_loss*len(y_batch))
+        print("train_loss ={}".format(train_epoch_loss/len(train_set[2])))
+        print("total_train_correct={}/total_train={}".format(sum_train_correct, len(train_set[2])))
+        train_accuracy.append(sum_train_correct*1.0/len(train_set[2]))
+        train_loss.append(train_epoch_loss/len(train_set[2]))
+
         # Update stored model
         if current_step % (FLAGS.checkpoint_every) == 0:
             if sum_val_correct >= max_validation_correct:

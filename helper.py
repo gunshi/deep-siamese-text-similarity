@@ -53,7 +53,9 @@ class InputHelper(object):
         # Loading Positive sample file
         train_data=[]
         #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
-        with open(base_filepath + 'positive_annotations_day_night_same.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations_day_night_same.txt', 'r') as file1:
+        with open(base_filepath + 'positive_annotations_day_night_overlap.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations_day_day_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
@@ -73,10 +75,10 @@ class InputHelper(object):
 
         for exampleIter in range(0,len(train_data),7):
             if(simplify!='none'):
-                if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+                #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
                 #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
-                    l_pos.append(' '.join(train_data[exampleIter+1]))
-                    l_pos.append(' '.join(train_data[exampleIter+2]))
+                l_pos.append(' '.join(train_data[exampleIter+1]))
+                l_pos.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
@@ -91,7 +93,9 @@ class InputHelper(object):
         # Loading Negative sample file
         l_neg = []
         #for line in open(base_filepath + 'negative_annotations.txt'):
-        for line in open(base_filepath + 'negative_annotations_day_night_same.txt'):
+        #for line in open(base_filepath + 'negative_annotations_day_night_same.txt'):
+        for line in open(base_filepath + 'negative_annotations_day_night_overlap.txt'):
+        #for line in open(base_filepath + 'negative_annotations_day_day_overlap.txt'):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
                 l_neg.append(line.strip())
