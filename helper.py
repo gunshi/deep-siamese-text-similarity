@@ -54,7 +54,8 @@ class InputHelper(object):
         train_data=[]
         #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_same.txt', 'r') as file1:
-        with open(base_filepath + 'positive_annotations_day_night_overlap.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations_day_night_overlap.txt', 'r') as file1:
+        with open(base_filepath + 'positive_annotations_day_day_inverse.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_day_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
             for row in file1:
