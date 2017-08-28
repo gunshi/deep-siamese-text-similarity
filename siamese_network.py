@@ -64,10 +64,10 @@ class SiameseLSTM(object):
         if return_outputs == 0:
             print(outputs)
             return outputs
-        elif retrun_outputs == 1:
+        elif return_outputs == 1:
             print(states[0][0].h)
             return states[0][0].h
-        elif retrun_outputs == 2:
+        elif return_outputs == 2:
             print(states[0][0].c)
             return states[0][0].c
         else:
