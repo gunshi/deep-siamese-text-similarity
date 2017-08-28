@@ -37,7 +37,7 @@ tf.flags.DEFINE_float("lr", 0.00001, "learning-rate(default: 0.00001)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
-tf.flags.DEFINE_boolean("return_outputs", False, "Outpust from LSTM, True=>Last LSMT output, False=> Cell-State Output(default: False)")
+tf.flags.DEFINE_integer("return_outputs", 2, "Outpust from LSTM, 0=>Last LSMT output, 2=> Cell-State Output. 1=> Hidden-State Output (default: 2)")
 tf.flags.DEFINE_string("summaries_dir", "/data4/abhijeet/gta/summaries/", "Summary storage")
 
 #Conv Net Parameters
@@ -58,7 +58,6 @@ if FLAGS.training_file_path==None:
 
 inpH = InputHelper()
 train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 10, FLAGS.batch_size)
-
 
 # Training
 # ==================================================

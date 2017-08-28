@@ -59,14 +59,19 @@ class SiameseLSTM(object):
             #outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell_m, lstm_bw_cell_m, x, dtype=tf.float32)
             outputs, states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, inputs= x, dtype=tf.float32,sequence_length=video_lengths)
             outputs = tf.concat(outputs, 2)
-            print(outputs)
+            #print(outputs)
             outputs = self.extract_axis(outputs, video_lengths-1)
+        if return_outputs == 0:
             print(outputs)
-        if return_outputs:
             return outputs
-        else:
+        elif retrun_outputs == 1:
+            print(states[0][0].h)
+            return states[0][0].h
+        elif retrun_outputs == 2:
             print(states[0][0].c)
             return states[0][0].c
+        else:
+            raise ValueError('requested value of return_outputs missing')
     
     def contrastive_loss(self, y,d,batch_size):
         tmp= y *tf.square(d)

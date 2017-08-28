@@ -55,7 +55,9 @@ class InputHelper(object):
         #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_same.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_overlap.txt', 'r') as file1:
-        with open(base_filepath + 'positive_annotations_day_day_inverse.txt', 'r') as file1:
+        with open(base_filepath + 'positive_annotations_day_night_all.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations_day_day_inverse.txt', 'r') as file1:
+        #with open(base_filepath + 'positive_annotations_day_night_inverse_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_day_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
             for row in file1:
@@ -85,6 +87,7 @@ class InputHelper(object):
         # positive samples from file
         num_positive_samples = len(l_pos)
         for i in range(0,num_positive_samples,2):
+            #print(l_pos[i], l_pos[i+1])
             x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(1)#np.array([0,1]))
@@ -95,7 +98,8 @@ class InputHelper(object):
         l_neg = []
         #for line in open(base_filepath + 'negative_annotations.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_night_same.txt'):
-        for line in open(base_filepath + 'negative_annotations_day_night_overlap.txt'):
+        #for line in open(base_filepath + 'negative_annotations_day_night_overlap.txt'):
+        for line in open(base_filepath + 'negative_annotations_day_night_all.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_day_overlap.txt'):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
@@ -255,7 +259,7 @@ class InputHelper(object):
         del x2
 
         temp = len(y_train_ordered)//batch_size
-        sum_no_of_batches = temp + 1 if len(y_train_ordered%batch_size) else temp
+        sum_no_of_batches = temp + 1 if len(y_train_ordered)%batch_size else temp
         train_set=(x1_train_ordered,x2_train_ordered,y_train_ordered, video_lengths_train_ordered)
         dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered, video_lengths_dev_ordered)
         gc.collect()
