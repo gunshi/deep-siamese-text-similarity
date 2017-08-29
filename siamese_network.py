@@ -15,8 +15,10 @@ class SiameseLSTM(object):
     def LSTMcell(self, n_hidden, reuse=True):
         if  reuse:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden, reuse=reuse)
+            #return tf.nn.rnn_cell.LSTMCell(n_hidden, use_peepholes=True, reuse=reuse)
         else:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden)
+            #return tf.nn.rnn_cell.LSTMCell(n_hidden, use_peepholes=True)
 
     def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, video_lengths, num_lstm_layers, hidden_unit_dim, reuse, return_outputs):
         n_input=embedding_size
@@ -65,10 +67,10 @@ class SiameseLSTM(object):
             print(outputs)
             return outputs
         elif return_outputs == 1:
-            print(states[0][0].h)
+            print(states[0])
             return states[0][0].h
         elif return_outputs == 2:
-            print(states[0][0].c)
+            print(states[0])
             return states[0][0].c
         else:
             raise ValueError('requested value of return_outputs missing')
@@ -134,10 +136,11 @@ class SiameseLSTM(object):
         with tf.name_scope("loss"):
           self.loss = tf.losses.mean_squared_error(self.input_y, self.distance)/batch_size
       elif loss == "contrastive":
-        with tf.name_scope("output"):
-          self.distance = tf.sqrt(epsilon+ tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
-          self.distance = tf.div(self.distance, tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
-          self.distance = tf.reshape(self.distance, [-1], name="distance")
+        #with tf.name_scope("output"):
+        self.distance = tf.sqrt(epsilon+ tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
+        self.distance = tf.div(self.distance, tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
+        self.distance = tf.reshape(self.distance, [-1], name="distance")
+        print(self.distance)
         with tf.name_scope("loss"):
           self.loss = self.contrastive_loss(self.input_y, self.distance, batch_size)
       else:
