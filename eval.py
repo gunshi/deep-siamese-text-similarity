@@ -91,6 +91,6 @@ with graph.as_default():
             
         #for ex in all_predictions:
         #    print(ex) 
-        correct_predictions = float(np.mean(all_dist == y_test))
+        correct_predictions = np.sum(all_predictions)*1.0/ len(all_predictions)
         print("Accuracy: {:g}".format(correct_predictions))
 
