@@ -6,7 +6,8 @@ import os
 import time
 import datetime
 #from tensorflow.contrib import learn
-from eval_helper import InputHelper
+from eval_helper import InputHelper, compute_distance
+from scipy import misc
 # Parameters
 # ==================================================
 
@@ -63,6 +64,7 @@ with graph.as_default():
         input_x1 = graph.get_operation_by_name("input_x1").outputs[0]
         input_x2 = graph.get_operation_by_name("input_x2").outputs[0]
         input_y = graph.get_operation_by_name("input_y").outputs[0]
+        video_lengths = graph.get_operation_by_name("video_lengths").outputs[0]
 
         dropout_keep_prob = graph.get_operation_by_name("dropout_keep_prob").outputs[0]
         # Tensors we want to evaluate
@@ -77,14 +79,15 @@ with graph.as_default():
         all_dist=[]
         for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b) in batches:
             misc.imsave('temp.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
-            print(x1_dev_b)
+            #print(x1_dev_b)
             [x1] = sess.run([conv_output], {input_imgs: x1_dev_b})
             [x2] = sess.run([conv_output], {input_imgs: x2_dev_b})
             [dist] = sess.run([predictions], {input_x1: x1, input_x2: x2, input_y:y_dev_b, dropout_keep_prob: 1.0, video_lengths: v_len_b})
             d = compute_distance(dist, FLAGS.loss)
-            correct = np.sum(y_batch==d)
-            all_dist = np.concatenate([all_dist, dist])
-            all_predictions = np.concatenate([all_predictions, correct])
+            correct = np.sum(y_dev_b==d)
+            print(dist, y_dev_b, d)
+            all_dist.append(dist)
+            all_predictions.append(correct)
             
         for ex in all_predictions:
             print(ex) 

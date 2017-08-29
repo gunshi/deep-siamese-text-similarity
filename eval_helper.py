@@ -28,7 +28,7 @@ class InputHelper(object):
         # Store paths of all images in the sequence
         for i in range(1, len(line), 1):
             if i < max_document_length:
-                temp.append(base_filepath + mapping_dict[line[0]] + '/' + line[i] + '.png')
+                temp.append(base_filepath + mapping_dict[line[0]] + '/Image' + line[i].zfill(5) + '.jpg')
         
         #append-black images if the seq length is less than 20
         while len(temp) < max_document_length:
