@@ -89,8 +89,8 @@ with graph.as_default():
             all_dist.append(dist)
             all_predictions.append(correct)
             
-        for ex in all_predictions:
-            print(ex) 
-        correct_predictions = float(np.mean(all_d == y_test))
+        #for ex in all_predictions:
+        #    print(ex) 
+        correct_predictions = float(np.mean(all_dist == y_test))
         print("Accuracy: {:g}".format(correct_predictions))
 

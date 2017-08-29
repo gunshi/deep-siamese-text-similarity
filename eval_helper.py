@@ -77,7 +77,7 @@ class InputHelper(object):
             y.append(1)#np.array([0,1]))
             temp_length = len(l_pos[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
-
+        """
         # Loading Negative sample file
         l_neg = []
         for line in open(base_filepath + 'alderly_negatives.txt'):
@@ -95,7 +95,7 @@ class InputHelper(object):
             temp_length = len(l_neg[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
 
-        l_neg = len(x1) - len(l_pos)//2
+        l_neg = len(x1) - len(l_pos)//2"""
         return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths)
 
 
