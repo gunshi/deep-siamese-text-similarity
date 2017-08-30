@@ -14,7 +14,7 @@ from scipy import misc
 # Eval Parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 4)")
 tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
-tf.flags.DEFINE_string("model", "/data4/abhijeet/gta/runs/1503971016/checkpoints/model-0", "Load trained model checkpoint (Default: None)")
+tf.flags.DEFINE_string("model", "/data4/abhijeet/gta/runs/1504128060/checkpoints/model-675", "Load trained model checkpoint (Default: None)")
 tf.flags.DEFINE_string("eval_filepath", "/data4/abhijeet/gta/final/", "testing folder (default: /home/halwai/gta/final)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")

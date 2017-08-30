@@ -15,9 +15,15 @@ class SiameseLSTM(object):
     def LSTMcell(self, n_hidden, reuse=True):
         if  reuse:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden, reuse=reuse)
+            #GRU
+            #return tf.contrib.rnn.GRUCell(n_hidden, reuse=reuse)
+            #BASIC LSTM with peepholes
             #return tf.nn.rnn_cell.LSTMCell(n_hidden, use_peepholes=True, reuse=reuse)
         else:
             return tf.contrib.rnn.BasicLSTMCell(n_hidden)
+            #GRU
+            #return tf.contrib.rnn.GRUCell(n_hidden)
+            #BASIC LSTM with peepholes
             #return tf.nn.rnn_cell.LSTMCell(n_hidden, use_peepholes=True)
 
     def BiRNN(self, x, dropout, scope, embedding_size, sequence_length, video_lengths, num_lstm_layers, hidden_unit_dim, reuse, return_outputs):
@@ -60,6 +66,7 @@ class SiameseLSTM(object):
         with tf.name_scope("bw"+scope),tf.variable_scope("bw"+scope):
             #outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell_m, lstm_bw_cell_m, x, dtype=tf.float32)
             outputs, states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, inputs= x, dtype=tf.float32,sequence_length=video_lengths)
+            #print(outputs, states)
             outputs = tf.concat(outputs, 2)
             #print(outputs)
             outputs = self.extract_axis(outputs, video_lengths-1)
@@ -67,11 +74,13 @@ class SiameseLSTM(object):
             print(outputs)
             return outputs
         elif return_outputs == 1:
-            print(states[0])
-            return states[0][0].h
+            state_fw, state_bw = states
+            print(state_fw[0].h)
+            return tf.concat([state_fw[0].h,state_bw[0].h], axis=1)
         elif return_outputs == 2:
-            print(states[0])
-            return states[0][0].c
+            state_fw, state_bw = states
+            print(state_fw[0].c)
+            return tf.concat([state_fw[0].c,state_bw[0].c], axis=1)
         else:
             raise ValueError('requested value of return_outputs missing')
     

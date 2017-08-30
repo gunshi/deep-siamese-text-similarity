@@ -29,6 +29,7 @@ class InputHelper(object):
         for i in range(1, len(line), 1):
             if i < max_document_length:
                 temp.append(base_filepath + mapping_dict[line[0]] + '/Image' + line[i].zfill(5) + '.jpg')
+                #temp.append(base_filepath + mapping_dict[line[0]] + '/' + line[i] + '.png')
         
         #append-black images if the seq length is less than 20
         while len(temp) < max_document_length:
@@ -52,7 +53,7 @@ class InputHelper(object):
 
         # Loading Positive sample file
         train_data=[]
-        with open(base_filepath + 'alderly_positives.txt', 'r') as file1:
+        """with open(base_filepath + 'alderly_positives.txt', 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
@@ -74,28 +75,29 @@ class InputHelper(object):
         for i in range(0,num_positive_samples,2):
             x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
-            y.append(1)#np.array([0,1]))
+            y.append(0)#np.array([0,1]))
             temp_length = len(l_pos[i].strip().split(" "))
-            video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
-        """
+            video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)"""
+        
         # Loading Negative sample file
         l_neg = []
         for line in open(base_filepath + 'alderly_negatives.txt'):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
-                l_neg.append(line.strip())
+                if random() < 0.2:    
+                    l_neg.append(line.strip())
         
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
-            #if random() > 0.91:
+            print(num_negative_samples, i)
             x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(0)#np.array([0,1]))
             temp_length = len(l_neg[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
 
-        l_neg = len(x1) - len(l_pos)//2"""
+        #l_neg = len(x1) - len(l_pos)//2
         return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths)
 
 
