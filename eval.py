@@ -1,5 +1,6 @@
-#! /usr/bin/env python
-
+#KeyError: u'VariableV2'! /usr/bin/env python
+from sklearn.metrics import precision_recall_curve
+import matplotlib.pyplot as plt
 import tensorflow as tf
 import numpy as np
 import os
@@ -14,8 +15,9 @@ from scipy import misc
 # Eval Parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 4)")
 tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
-tf.flags.DEFINE_string("model", "/data4/abhijeet/gta/runs/1504128060/checkpoints/model-675", "Load trained model checkpoint (Default: None)")
-tf.flags.DEFINE_string("eval_filepath", "/data4/abhijeet/gta/final/", "testing folder (default: /home/halwai/gta/final)")
+tf.flags.DEFINE_string("model", "/home/tushar/codes/rnn-cnn/runs/1504859242/checkpoints/model-784", "Load trained model checkpoint (Default: None)")
+tf.flags.DEFINE_string("eval_filepath", "/home/tushar/Heavy_dataset/gta_data/final/", "testing folder (default: /home/halwai/gta/final)")
+tf.flags.DEFINE_string("ann_filepath", "./annotation_files/", "testing folde")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 
@@ -37,7 +39,7 @@ if FLAGS.eval_filepath==None or FLAGS.model==None :
 
 # load data and map id-transform based on training time vocabulary
 inpH = InputHelper()
-x1_test,x2_test,y_test,video_lengths_test = inpH.getTestDataSet(FLAGS.eval_filepath, FLAGS.max_frames)
+x1_test,x2_test,y_test,video_lengths_test = inpH.getTestDataSet(FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
 
 print("\nEvaluating...\n")
 
@@ -77,6 +79,7 @@ with graph.as_default():
         # Collect the predictions here
         all_predictions = []
         all_dist=[]
+        all_labels=[]
         for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b) in batches:
             misc.imsave('temp.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
             #print(x1_dev_b)
@@ -88,9 +91,24 @@ with graph.as_default():
             print(dist, y_dev_b, d)
             all_dist.append(dist)
             all_predictions.append(correct)
-            
+            all_labels.append(y_dev_b)
         #for ex in all_predictions:
-        #    print(ex) 
+        #    print(ex)
         correct_predictions = np.sum(all_predictions)*1.0/ len(all_predictions)
         print("Accuracy: {:g}".format(correct_predictions))
+        #invert dist also
 
+        dist2 = [1-x for x in all_dist]
+        precision, recall, _ = precision_recall_curve(all_labels,dist2)
+
+        precision2,recall2,_=precision_recall_curve(all_labels,dist2)
+        plt.step(recall, precision, color='b', alpha=0.2,
+                         where='post')
+        plt.fill_between(recall, precision, step='post', alpha=0.2,
+                                         color='b')
+        plt.xlabel('Recall')
+        plt.ylabel('Precision')
+        plt.ylim([0.0, 1.05])
+        plt.xlim([0.0, 1.0])
+        plt.title('2-class Precision-Recall curve')
+        plt.show()

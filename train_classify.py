@@ -20,33 +20,30 @@ tf.flags.DEFINE_integer("embedding_dim", 1000, "Dimensionality of character embe
 tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
 tf.flags.DEFINE_string("training_file_path", "/home/tushar/Heavy_dataset/gta_data/final/", "training folder (default: /home/halwai/gta_data/final)")
-tf.flags.DEFINE_string("training_files_path", "./annotation_files/", "training folder...")
+tf.flags.DEFINE_string("training_files_path", "./annotation_files/", "training.")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 15, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 1, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 3, "Number of LSTM layers(default: 1)")
-tf.flags.DEFINE_integer("hidden_dim", 80, "Number of LSTM layers(default: 2)")
+tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
-tf.flags.DEFINE_boolean("conv_net_training",False, "Training ConvNet (Default: False)")
+tf.flags.DEFINE_boolean("conv_net_training", False, "Training ConvNet (Default: False)")
 tf.flags.DEFINE_float("lr", 0.00001, "learning-rate(default: 0.00001)")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
-tf.flags.DEFINE_integer("return_outputs", 1, "Outpust from LSTM, 0=>Last LSMT output, 2=> Cell-State Output. 1=> Hidden-State Output (default: 2)")
+tf.flags.DEFINE_integer("return_outputs", 2, "Outpust from LSTM, 0=>Last LSMT output, 2=> Cell-State Output. 1=> Hidden-State Output (default: 2)")
 tf.flags.DEFINE_string("summaries_dir", "/home/tushar/codes/rnn-cnn/summaries/", "Summary storage")
 
 #Conv Net Parameters
 tf.flags.DEFINE_string("conv_layer", "pool6", "CNN features from AMOSNet(default: pool6)")
 tf.flags.DEFINE_string("conv_layer_weight_pretrained_path", "/home/tushar/Heavy_dataset/amos/data1.npy", "AMOSNet pre-trained weights path")
-
-tf.flags.DEFINE_string("train_file_positive", "./annotation_files/pos_trainingdata_new+old-inters-withspills.txt", "Positive_training_file")
-tf.flags.DEFINE_string("train_file_negative", "./annotation_files/negs-train+val-less.txt", "Negative_training_file")
 
 
 FLAGS = tf.flags.FLAGS
@@ -61,13 +58,13 @@ if FLAGS.training_files_path==None:
     exit()
 
 inpH = InputHelper()
-train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,37 ,30 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
+train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames, 50, FLAGS.batch_size)
 
 # Training
 # ==================================================
 print("starting graph def")
 with tf.Graph().as_default():
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     session_conf = tf.ConfigProto(
       allow_soft_placement=FLAGS.allow_soft_placement,
       log_device_placement=FLAGS.log_device_placement,
@@ -93,9 +90,7 @@ with tf.Graph().as_default():
             hidden_unit_dim=FLAGS.hidden_dim,
             loss=FLAGS.loss,
             projection=FLAGS.projection,
-            return_outputs=FLAGS.return_outputs,
-            num_pos=num_pos,
-            num_neg=num_neg)
+            return_outputs=FLAGS.return_outputs)
 
 
         # Define Training procedure
@@ -103,10 +98,8 @@ with tf.Graph().as_default():
         learning_rate=tf.train.exponential_decay(1e-5, global_step, sum_no_of_batches*5, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(FLAGS.lr)
         print("initialized convmodel and siamesemodel object")
-    tv = tf.trainable_variables()
-    regularization_cost = tf.reduce_sum([ tf.nn.l2_loss(v) for v in tv ])
-    total_loss=siameseModel.loss+float(0.000)*regularization_cost
-    grads_and_vars=optimizer.compute_gradients(total_loss)
+
+    grads_and_vars=optimizer.compute_gradients(siameseModel.loss)
     tr_op_set = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
     print("defined training_ops")
     # keep track of gradient values and sparsity (optional)
@@ -227,8 +220,6 @@ with tf.Graph().as_default():
     for nn in xrange(FLAGS.num_epochs):
         # Evaluate on Validataion Data for every epoch
         sum_val_correct=0.0
-        sum_pos_correct=0.0
-        sum_neg_correct=0.0
         val_epoch_loss=0.0
         val_results = []
         print("\nEvaluation:")
@@ -239,11 +230,6 @@ with tf.Graph().as_default():
                 continue
             dev_iter += 1
             summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b, dev_video_lengths, dev_iter,nn)
-            pos_correct_array = np.multiply(y_dev_b,batch_results)
-            pos_correct=np.sum(pos_correct_array)
-            neg_correct=batch_val_correct-pos_correct
-            sum_pos_correct = sum_pos_correct + pos_correct
-            sum_neg_correct = sum_neg_correct + neg_correct
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
             current_step = tf.train.global_step(sess, global_step)
@@ -252,9 +238,6 @@ with tf.Graph().as_default():
             val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
         print("val_loss ={}".format(val_epoch_loss/len(dev_set[2])))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
-        print("total_pos_correct={}".format(sum_pos_correct))
-        print("total_neg_correct={}".format(sum_neg_correct))
-
         val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
 

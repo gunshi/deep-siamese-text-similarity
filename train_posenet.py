@@ -11,22 +11,22 @@ from helper import InputHelper, save_plot, compute_distance
 from siamese_network import SiameseLSTM
 import gzip
 from random import random
-from amos import Conv ##!
-from posenet import Conv
+from posenet import net, Conv
 
 # Parameters
 # ==================================================
 
 tf.flags.DEFINE_integer("embedding_dim", 1000, "Dimensionality of character embedding (default: 300)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
-tf.flags.DEFINE_string("training_file_path", "/data4/abhijeet/gta/final/", "training folder (default: /home/halwai/gta_data/final)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.01, "L2 regularizaion lambda (default: 0.0)")
+tf.flags.DEFINE_string("training_file_path", "/home/tushar/Heavy_dataset/gta_data/final/", "training folder (default: /home/halwai/gta_data/final)")
+tf.flags.DEFINE_string("training_files_path", "./annotation_files/", "training folder (default: /home/halwai/gta_data/final)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
-tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 20, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 1, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
 tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
@@ -38,12 +38,14 @@ tf.flags.DEFINE_float("lr", 0.00001, "learning-rate(default: 0.00001)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", False, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
-tf.flags.DEFINE_integer("return_outputs", 2, "Outpust from LSTM, 0=>Last LSMT output, 2=> Cell-State Output. 1=> Hidden-State Output (default: 2)")
-tf.flags.DEFINE_string("summaries_dir", "/data4/abhijeet/gta/summaries/", "Summary storage")
+tf.flags.DEFINE_integer("return_outputs", 1, "Outpust from LSTM, 0=>Last LSMT output, 2=> Cell-State Output. 1=> Hidden-State Output (default: 2)")
+tf.flags.DEFINE_string("summaries_dir", "/home/tushar/codes/rnn-cnn/summaries/", "Summary storage")
 
 #Conv Net Parameters
 tf.flags.DEFINE_string("conv_layer", "cls3_fc1_pose", "CNN features from AMOSNet(default: cls3_fc1_pose)")
-tf.flags.DEFINE_string("conv_layer_weight_pretrained_path", "./posenet.npy", "AMOSNet pre-trained weights path")#or posenet.ckpt?
+tf.flags.DEFINE_string("conv_layer_weight_pretrained_path", "/home/tushar/codes/rnn-cnn/PoseNet.ckpt", "AMOSNet pre-trained weights path")#or posenet.ckpt?
+tf.flags.DEFINE_string("train_file_positive", "./annotation_files/positives-moredata-train+val.txt", "Positive_training_file")
+tf.flags.DEFINE_string("train_file_negative", "./annotation_files/negs-concat.txt", "Negative_training_file")
 
 
 FLAGS = tf.flags.FLAGS
@@ -53,12 +55,12 @@ for attr, value in sorted(FLAGS.__flags.items()):
     print("{}={}".format(attr.upper(), value))
 print("")
 
-if FLAGS.training_file_path==None:
-    print("Input Files List is empty. use --training_file_path argument.")
+if FLAGS.training_files_path==None:
+    print("Input Files List is empty. use --training_files_path argument.")
     exit()
 
 inpH = InputHelper()
-train_set, dev_set, sum_no_of_batches = inpH.getDataSets(FLAGS.training_file_path, FLAGS.max_frames, 50, FLAGS.batch_size)
+train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,37,30 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
 
 # Training
 # ==================================================
@@ -73,7 +75,6 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
     print("started session")
     with sess.as_default():
-
         convModel = Conv(
          FLAGS.conv_layer,
          FLAGS.conv_layer_weight_pretrained_path,
@@ -81,9 +82,11 @@ with tf.Graph().as_default():
          FLAGS.max_frames,
          FLAGS.conv_net_training)
 
+        convNet_tvar = tf.global_variables()
+
         siameseModel = SiameseLSTM(
             sequence_length=FLAGS.max_frames,
-            input_size=9216,
+            input_size=2048,
             embedding_size=FLAGS.embedding_dim,
             l2_reg_lambda=FLAGS.l2_reg_lambda,
             batch_size=FLAGS.batch_size,
@@ -91,8 +94,9 @@ with tf.Graph().as_default():
             hidden_unit_dim=FLAGS.hidden_dim,
             loss=FLAGS.loss,
             projection=FLAGS.projection,
-            return_outputs=FLAGS.return_outputs)
-       
+            return_outputs=FLAGS.return_outputs,
+            num_pos=num_pos,
+            num_neg=num_neg)
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
@@ -100,7 +104,10 @@ with tf.Graph().as_default():
         optimizer = tf.train.AdamOptimizer(FLAGS.lr)
         print("initialized convmodel and siamesemodel object")
     
-    grads_and_vars=optimizer.compute_gradients(siameseModel.loss)
+    tv =  list(set(tf.trainable_variables())- set(convNet_tvar))
+    regularization_cost = tf.reduce_sum([ tf.nn.l2_loss(v) for v in tv if 'bias' not in v.name ])
+    total_loss=siameseModel.loss+FLAGS.l2_reg_lambda*regularization_cost
+    grads_and_vars=optimizer.compute_gradients(total_loss, var_list = list(set(tf.trainable_variables())- set(convNet_tvar)))
     tr_op_set = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
     print("defined training_ops")
     # keep track of gradient values and sparsity (optional)
@@ -116,7 +123,7 @@ with tf.Graph().as_default():
     print("defined gradient summaries")
     # Output directory for models and summaries
     timestamp = str(int(time.time()))
-    out_dir = os.path.abspath(os.path.join("/data4/abhijeet/gta/", "runs", timestamp))
+    out_dir = os.path.abspath(os.path.join("/home/tushar/codes/rnn-cnn/", "runs", timestamp))
     print("Writing to {}\n".format(out_dir))
 
     # Checkpoint directory. Tensorflow assumes this directory already exists so we need to create it
@@ -126,25 +133,30 @@ with tf.Graph().as_default():
     if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
 
-    lstm_savepath="/data4/abhijeet/gta/lstm_outputs"
+    lstm_savepath="/home/tushar/codes/rnn-cnn/data/lstm_outputs"
     if not os.path.exists(lstm_savepath):
             os.makedirs(lstm_savepath)
 
+    #print all convNet_trainable parameters
+    for i, var in enumerate(convNet_tvar):
+        print("{}".format(var.name))
+
     saver = tf.train.Saver(tf.global_variables(), max_to_keep=2)
+    saver_posenet = tf.train.Saver(var_list=convNet_tvar)
+
     #lstm_saver = tf.train.Saver([out1,out2], max_to_keep=2)
 
     # Initialize all variables
     sess.run(tf.global_variables_initializer())
-    
 
     #Fix weights for Conv Layers
-    convModel.initalize(sess)
+    convModel.initalize(sess, saver_posenet)
 
     #print all trainable parameters
-    tvar = tf.trainable_variables()
+    tvar = list(set(tf.trainable_variables())- set(convNet_tvar))
     for i, var in enumerate(tvar):
-        print("{}".format(var.name))
-    
+        print("{}={}".format(i,var.name))
+
     print("init all variables")
     graph_def = tf.get_default_graph().as_graph_def()
     graphpb_txt = str(graph_def)
@@ -154,11 +166,11 @@ with tf.Graph().as_default():
 
     train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train', graph=tf.get_default_graph())
     val_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/val' , graph=tf.get_default_graph())
-    
+
     def train_step(x1_batch, x2_batch, y_batch, video_lengths):
-        
+
         #A single training step
-        
+
         [x1_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x1_batch})
         [x2_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x2_batch})
 
@@ -181,9 +193,9 @@ with tf.Graph().as_default():
         return summary, np.sum(correct), loss
 
     def dev_step(x1_batch, x2_batch, y_batch, video_lengths, dev_iter, epoch):
-        
+
         #A single training step
-        
+
         [x1_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x1_batch})
         [x2_batch] = sess.run([convModel.features],  feed_dict={convModel.input_imgs: x2_batch})
 
@@ -195,7 +207,7 @@ with tf.Graph().as_default():
                          siameseModel.video_lengths: video_lengths,
 
         }
-       
+
         step, loss, dist, summary, out1, out2 = sess.run([global_step, siameseModel.loss, siameseModel.distance, summaries_merged,siameseModel.out1,siameseModel.out2],  feed_dict)
         #np.save(lstm_savepath+'/out1_'+str(dev_iter)+'_'+str(epoch),out1)
         #np.save(lstm_savepath+'/out2_'+str(dev_iter)+'_'+str(epoch),out2)
@@ -222,6 +234,8 @@ with tf.Graph().as_default():
     for nn in xrange(FLAGS.num_epochs):
         # Evaluate on Validataion Data for every epoch
         sum_val_correct=0.0
+        sum_pos_correct=0.0
+        sum_neg_correct=0.0
         val_epoch_loss=0.0
         val_results = []
         print("\nEvaluation:")
@@ -232,6 +246,11 @@ with tf.Graph().as_default():
                 continue
             dev_iter += 1
             summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b, dev_video_lengths, dev_iter,nn)
+            pos_correct_array = np.multiply(y_dev_b,batch_results)
+            pos_correct=np.sum(pos_correct_array)
+            neg_correct=batch_val_correct-pos_correct
+            sum_pos_correct = sum_pos_correct + pos_correct
+            sum_neg_correct = sum_neg_correct + neg_correct
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
             current_step = tf.train.global_step(sess, global_step)
@@ -240,9 +259,12 @@ with tf.Graph().as_default():
             val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
         print("val_loss ={}".format(val_epoch_loss/len(dev_set[2])))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
+        print("total_pos_correct={}".format(sum_pos_correct))
+        print("total_neg_correct={}".format(sum_neg_correct))
+
         val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
-    
+
         print("Epoch Number: {}".format(nn))
         epoch_start_time = time.time()
         sum_train_correct=0.0
@@ -253,7 +275,7 @@ with tf.Graph().as_default():
                 continue
             summary, train_batch_correct, train_batch_loss =train_step(x1_batch, x2_batch, y_batch, video_lengths)
             train_writer.add_summary(summary, current_step)
-            sum_train_correct = sum_train_correct + train_batch_correct    
+            sum_train_correct = sum_train_correct + train_batch_correct
             train_epoch_loss = train_epoch_loss + train_batch_loss* len(y_batch)
             train_batch_loss_arr.append(train_batch_loss*len(y_batch))
         print("train_loss ={}".format(train_epoch_loss/len(train_set[2])))

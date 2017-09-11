@@ -1,6 +1,25 @@
 from network import Network
 
-class Conv(Network):
+import tensorflow as tf
+import numpy as np
+from scipy import misc
+
+class net(Network):
+    def __init__(self, inputs, trainable=True):
+        # The input nodes for this network
+        self.inputs = inputs
+        # The current list of terminal nodes
+        self.terminals = []
+        # Mapping from layer names to layers
+        self.layers = dict(inputs)
+        # If true, the resulting variables are set as trainable
+        self.trainable = trainable
+        # Switch variable for dropout
+        self.use_dropout = tf.placeholder_with_default(tf.constant(1.0),
+                                                       shape=[],
+                                                       name='use_dropout')
+        self.setup()
+
     def setup(self):
         (self.feed('data') 
              .conv(7, 7, 64, 2, 2, name='conv1')
@@ -207,3 +226,27 @@ class Conv(Network):
 
         (self.feed('cls3_fc1_pose')
              .fc(4, relu=False, name='cls3_fc_pose_wpqr'))
+
+
+
+class Conv(object):
+    def __init__(self, layer, ckpt_path, batch_size, max_frames, trainable):
+        self.layer = layer
+        self.batch_size = batch_size
+        self.max_frames = max_frames
+        self.ckpt_path = ckpt_path
+        self.trainable = trainable
+
+        mean = [104, 114, 124]
+        scale_size = (224,224)
+
+        self.spec = [mean, scale_size]
+
+        self.input_imgs = tf.placeholder(tf.float32, [None, 224, 224, 3], name="input_imgs")
+        self.convModel = net({'data': self.input_imgs})
+
+        with tf.name_scope("conv"):
+            self.features = tf.identity(self.convModel.layers[self.layer], name="output")
+    
+    def initalize(self, sess, saver):
+        saver.restore(sess, self.ckpt_path)

@@ -11,10 +11,10 @@ class Conv(object):
         keys = sorted(pre_trained_weights.keys())
         #for k in keys:
         for k in list(filter(lambda x: 'conv' in x,keys)):
-            with tf.variable_scope(k, reuse=True):
+            with tf.variable_scope('weather/'+k, reuse=True):
                 temp = tf.get_variable('weights')
                 sess.run(temp.assign(pre_trained_weights[k]['weights']))
-            with tf.variable_scope(k, reuse=True):
+            with tf.variable_scope('weather/'+k, reuse=True):
                 temp = tf.get_variable('biases')
                 sess.run(temp.assign(pre_trained_weights[k]['biases']))
             
@@ -58,31 +58,32 @@ class Conv(object):
 
         # Conv-Layers
         net_layers={}
-        net_layers['conv1'] = self.conv(self.input_imgs, 11, 3, 96, name= 'conv1', strides=[1,4,4,1] ,padding='VALID', groups=1)
-        net_layers['pool1'] = self.pool(net_layers['conv1'], padding='VALID', name='pool1')
-        net_layers['lrn1']  = tf.nn.lrn(net_layers['pool1'], depth_radius=2, alpha=2e-5, beta=0.75,name='norm1')
+        with tf.variable_scope("weather") as scope:
+            net_layers['conv1'] = self.conv(self.input_imgs, 11, 3, 96, name= 'conv1', strides=[1,4,4,1] ,padding='VALID', groups=1)
+            net_layers['pool1'] = self.pool(net_layers['conv1'], padding='VALID', name='pool1')
+            net_layers['lrn1']  = tf.nn.lrn(net_layers['pool1'], depth_radius=2, alpha=2e-5, beta=0.75,name='norm1')
 
-        net_layers['conv2'] = self.conv(net_layers['lrn1'], 5, 96, 256, name= 'conv2', strides=[1,1,1,1] ,padding='SAME', groups=2)
-        net_layers['pool2'] = self.pool(net_layers['conv2'], padding='VALID', name='pool2')
-        net_layers['lrn2']  = tf.nn.lrn(net_layers['pool2'], depth_radius=2, alpha=2e-5, beta=0.75,name='norm2')
+            net_layers['conv2'] = self.conv(net_layers['lrn1'], 5, 96, 256, name= 'conv2', strides=[1,1,1,1] ,padding='SAME', groups=2)
+            net_layers['pool2'] = self.pool(net_layers['conv2'], padding='VALID', name='pool2')
+            net_layers['lrn2']  = tf.nn.lrn(net_layers['pool2'], depth_radius=2, alpha=2e-5, beta=0.75,name='norm2')
 
-        net_layers['conv3'] = self.conv(net_layers['lrn2'], 3, 256, 384, name='conv3', strides=[1,1,1,1] ,padding='SAME', groups=1)
+            net_layers['conv3'] = self.conv(net_layers['lrn2'], 3, 256, 384, name='conv3', strides=[1,1,1,1] ,padding='SAME', groups=1)
 
-        net_layers['conv4'] = self.conv(net_layers['conv3'], 3, 384, 384, name='conv4', strides=[1,1,1,1] ,padding='SAME', groups=2)
+            net_layers['conv4'] = self.conv(net_layers['conv3'], 3, 384, 384, name='conv4', strides=[1,1,1,1] ,padding='SAME', groups=2)
 
-        net_layers['conv5'] = self.conv(net_layers['conv4'], 3, 384, 256, name='conv5', strides=[1,1,1,1] ,padding='SAME', groups=2)
+            net_layers['conv5'] = self.conv(net_layers['conv4'], 3, 384, 256, name='conv5', strides=[1,1,1,1] ,padding='SAME', groups=2)
 
-        net_layers['conv6'] = self.conv(net_layers['conv5'], 3, 256, 256, name='conv6', strides=[1,1,1,1] ,padding='SAME', groups=2)
-        net_layers['pool6'] = self.pool(net_layers['conv6'], padding='VALID', name='pool6')
-        
-        # FC layers
-        #net_layers['fc7'] = self.fc(net_layers['pool6'],  6*6*256, 4096, name='fc7_new', relu = 1)
-        #net_layers['fc8'] = self.fc(net_layers['fc7'], 4096, 2543, name='fc8_new', relu = 0)
+            net_layers['conv6'] = self.conv(net_layers['conv5'], 3, 256, 256, name='conv6', strides=[1,1,1,1] ,padding='SAME', groups=2)
+            net_layers['pool6'] = self.pool(net_layers['conv6'], padding='VALID', name='pool6')
+            
+            # FC layers
+            #net_layers['fc7'] = self.fc(net_layers['pool6'],  6*6*256, 4096, name='fc7_new', relu = 1)
+            #net_layers['fc8'] = self.fc(net_layers['fc7'], 4096, 2543, name='fc8_new', relu = 0)
 
-        #net_layers['prob'] = tf.nn.softmax(net_layers['fc8'])
-        #net_layers['pred'] = tf.argmax(tf.nn.softmax(net_layers['fc8']), axis = 1)
+            #net_layers['prob'] = tf.nn.softmax(net_layers['fc8'])
+            #net_layers['pred'] = tf.argmax(tf.nn.softmax(net_layers['fc8']), axis = 1)
 
-        self.net_layers = net_layers
+            self.net_layers = net_layers
 
 
 

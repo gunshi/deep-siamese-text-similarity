@@ -29,15 +29,15 @@ class InputHelper(object):
         for i in range(1, len(line), 1):
             if i < max_document_length:
                 temp.append(base_filepath + mapping_dict[line[0]] + '/' + line[i] + '.png')
-        
+
         #append-black images if the seq length is less than 20
         while len(temp) < max_document_length:
-            temp.append(base_filepath + 'black_image.jpg')
+            temp.append(base_filepath + 'black_image.png')
 
         return temp
 
 
-    def getTsvData(self, base_filepath, max_document_length, simplify):
+    def getTsvData(self,base_filepath_images, base_filepath, max_document_length, simplify, positive_file, negative_file):
         print("Loading training data from " + base_filepath)
         x1=[]
         x2=[]
@@ -55,41 +55,41 @@ class InputHelper(object):
         #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_same.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_overlap.txt', 'r') as file1:
-        with open(base_filepath + 'positive_annotations_day_night_all.txt', 'r') as file1:
+        #with open(base_filepath + 'positives-moredata-train+val.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_day_inverse.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_night_inverse_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'positive_annotations_day_day_overlap.txt', 'r') as file1:
         #with open(base_filepath + 'ultra_simple_positive_annotations', 'r') as file1:
+        with open(positive_file) as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
-
                 if(len(temp)>0 and temp[0][0]!='/'):
                     train_data.append(temp)
         assert(len(train_data)%7==0)
 
         l_pos = []
-        #tags_simplify=['overlap','same']
-        tags_simplify=['same']
-        
+        tags_simplify=['overlap','same']
+        #tags_simplify=['same']
+
         #simplify can only be: 'inverse','same','none'
         values_simplify=['inverse','same','none']
         assert(simplify in values_simplify)
 
         for exampleIter in range(0,len(train_data),7):
-            if(simplify!='none'):
-                #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+            #if(simplify!='none'):
+            #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
                 #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
-                l_pos.append(' '.join(train_data[exampleIter+1]))
-                l_pos.append(' '.join(train_data[exampleIter+2]))
+            l_pos.append(' '.join(train_data[exampleIter+1]))
+            l_pos.append(' '.join(train_data[exampleIter+2]))
 
 
         # positive samples from file
         num_positive_samples = len(l_pos)
         for i in range(0,num_positive_samples,2):
             #print(l_pos[i], l_pos[i+1])
-            x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
-            x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
+            x1.append(self.getfilenames(l_pos[i], base_filepath_images, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l_pos[i+1], base_filepath_images, mapping_dict, max_document_length))
             y.append(1)#np.array([0,1]))
             temp_length = len(l_pos[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
@@ -99,18 +99,20 @@ class InputHelper(object):
         #for line in open(base_filepath + 'negative_annotations.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_night_same.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_night_overlap.txt'):
-        for line in open(base_filepath + 'negative_annotations_day_night_all.txt'):
+        #for line in open(base_filepath + 'negs-concat.txt'):
+        #for line in open(base_filepath + 'negs-train+val-less.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_day_overlap.txt'):
+        for line in open(negative_file):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
                 l_neg.append(line.strip())
-        
+
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
             #if random() > 0.91:
-            x1.append(self.getfilenames(l_neg[i], base_filepath, mapping_dict, max_document_length))
-            x2.append(self.getfilenames(l_neg[i+1], base_filepath, mapping_dict, max_document_length))
+            x1.append(self.getfilenames(l_neg[i],base_filepath_images, mapping_dict, max_document_length))
+            x2.append(self.getfilenames(l_neg[i+1], base_filepath_images, mapping_dict, max_document_length))
             y.append(0)#np.array([0,1]))
             temp_length = len(l_neg[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
@@ -124,7 +126,7 @@ class InputHelper(object):
         x1=[]
         x2=[]
         y=[]
-        
+
         #load all the mapping dictonaries
         mapping_dict = {}
         for line_no,line in enumerate(open(base_filepath + 'mapping_file')):
@@ -144,8 +146,8 @@ class InputHelper(object):
             x2.append(self.getfilenames(l[i+1], base_filepath, mapping_dict, max_document_length))
             y.append(1)
 
-        return np.asarray(x1),np.asarray(x2),np.asarray(y)  
- 
+        return np.asarray(x1),np.asarray(x2),np.asarray(y)
+
     def batch_iter(self, x1, x2, y, video_lengths, batch_size, num_epochs, conv_model_spec, shuffle=True, is_train=True):
         """
         Generates a batch iterator for a dataset.
@@ -174,8 +176,8 @@ class InputHelper(object):
 
                 processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch ,is_train)
                 yield( processed_imgs[0], processed_imgs[1]  , y_shuffled[start_index:end_index], video_lengths_shuffled[start_index:end_index])
-    
-    
+
+
     def normalize_input(self, img, conv_model_spec):
         img = img.astype(dtype=np.float32)
         img = img[:, :, [2, 1, 0]] # swap channel from RGB to BGR
@@ -187,7 +189,7 @@ class InputHelper(object):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
             seq_det1 = self.seq_det[epoch%5] # call this for each batch again, NOT only once at the start
-            seq_det2 = self.seq_det[epoch%5] 
+            seq_det2 = self.seq_det[epoch%5]
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
@@ -196,7 +198,7 @@ class InputHelper(object):
                 if is_train==True:
                     img_aug = seq_det1.augment_images(np.expand_dims(img_normalized,axis=0))
                     batch1_seq.append(img_aug[0])
-                else: 
+                else:
                     batch1_seq.append(img_normalized)
 
                 img_org = misc.imread(side2_img_path)
@@ -209,19 +211,19 @@ class InputHelper(object):
                     batch2_seq.append(img_normalized)
 
         #misc.imsave('temp1.png', np.vstack([np.hstack(batch1_seq),np.hstack(batch2_seq)]))
-   
+
         temp =  [np.asarray(batch1_seq), np.asarray(batch2_seq)]
         return temp
-    
+
 
     # Data Preparatopn
     # ==================================================
-    
-    def getDataSets(self, training_paths, max_document_length, percent_dev, batch_size):
+
+    def getDataSets(self, image_paths,training_paths, max_document_length, percent_dev_neg,percent_dev_pos, batch_size, positive_file, negative_file):
         simplify='same' #'inverse','none'
         self.apply_image_augmentations()
         self.data_augmentations()
-        x1, x2, y, num_pos, num_neg, video_lengths =self.getTsvData(training_paths, max_document_length, simplify)
+        x1, x2, y, num_pos, num_neg, video_lengths =self.getTsvData(image_paths,training_paths, max_document_length, simplify, positive_file, negative_file)
         num_total = num_pos + num_neg
         print(num_pos, num_neg)
 
@@ -230,16 +232,16 @@ class InputHelper(object):
         dev_set=[]
 
         # take positive and negative samples in equal ratios
-        dev_idx = [i for i in range(num_pos-1, num_pos-1-num_pos*percent_dev//100, -1 )] + [i for i in range(num_total-1, num_total-1-num_neg*percent_dev//100, -1 )] 
-        train_idx = [i for i in range(0, num_pos-num_pos*percent_dev//100, 1 )] + [i for i in range(num_pos, num_total-num_neg*percent_dev//100, 1 )] 
+        dev_idx = [i for i in range(num_pos-1, num_pos-1-num_pos*percent_dev_pos//100, -1 )] + [i for i in range(num_total-1, num_total-1-num_neg*percent_dev_neg//100, -1 )]
+        train_idx = [i for i in range(0, num_pos-num_pos*percent_dev_pos//100, 1 )] + [i for i in range(num_pos, num_total-num_neg*percent_dev_neg//100, 1 )]
         # Split train/test set
         # TODO: This is very crude, should use cross-validation
-        x1_train_ordered, x1_dev_ordered = np.asarray([x1[i] for i in train_idx]), np.asarray([x1[i] for i in dev_idx]) 
+        x1_train_ordered, x1_dev_ordered = np.asarray([x1[i] for i in train_idx]), np.asarray([x1[i] for i in dev_idx])
         x2_train_ordered, x2_dev_ordered = np.asarray([x2[i] for i in train_idx]), np.asarray([x2[i] for i in dev_idx])
-        y_train_ordered, y_dev_ordered = np.asarray([y[i] for i in train_idx]), np.asarray([y[i] for i in dev_idx]) 
+        y_train_ordered, y_dev_ordered = np.asarray([y[i] for i in train_idx]), np.asarray([y[i] for i in dev_idx])
         video_lengths_train_ordered, video_lengths_dev_ordered = np.asarray([video_lengths[i] for i in train_idx]), np.asarray([video_lengths[i] for i in dev_idx])
         print("Train/Dev split for {}: {:d}/{:d}".format(training_paths, len(y_train_ordered), len(y_dev_ordered)))
-     
+
         # Randomly shuffle data
         #np.random.seed(131)
         #shuffle_indices = np.random.permutation(np.arange(len(y_train_ordered)))
@@ -263,9 +265,11 @@ class InputHelper(object):
         train_set=(x1_train_ordered,x2_train_ordered,y_train_ordered, video_lengths_train_ordered)
         dev_set=(x1_dev_ordered,x2_dev_ordered,y_dev_ordered, video_lengths_dev_ordered)
         gc.collect()
-        
-        return train_set,dev_set,sum_no_of_batches
-    
+        npos=np.sum(y_train_ordered)
+        nneg=len(y_train_ordered)-npos
+        print("pos/neg split : {:d}/{:d}".format(npos,nneg ))
+        return train_set,dev_set,sum_no_of_batches,npos,nneg
+
 
     def getTestDataSet(self, data_path, max_document_length):
         self.apply_image_augmentations()
@@ -344,7 +348,7 @@ def compute_distance(distance, loss):
         d[distance>=0.5]=1
         d[distance<0.5]=0
     elif loss == "contrastive":
-        d[distance>0.5]=0 
+        d[distance>0.5]=0
         d[distance<=0.5]=1
     else:
         raise ValueError("Unkown loss function {%s}".format(loss))
