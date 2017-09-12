@@ -85,7 +85,7 @@ class SiameseLSTM(object):
             raise ValueError('requested value of return_outputs missing')
 
     def contrastive_loss(self, y,d,batch_size):
-        tmp1= tf.multiply(y *tf.square(d), self.scale_ratio)
+        tmp1 = tf.multiply(y *tf.square(d), self.scale_ratio)
         tmp2 = (1-y) *tf.square(tf.maximum((1 - d),0))
         return tf.reduce_sum(tmp1+tmp2)/batch_size/2
 

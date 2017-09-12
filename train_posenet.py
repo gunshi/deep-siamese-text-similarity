@@ -28,8 +28,8 @@ tf.flags.DEFINE_string("name", "result", "prefix names of the output files(defau
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 20, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 1, "Save model after this many epochs (default: 100)")
-tf.flags.DEFINE_integer("num_lstm_layers", 1, "Number of LSTM layers(default: 1)")
-tf.flags.DEFINE_integer("hidden_dim", 50, "Number of LSTM layers(default: 2)")
+tf.flags.DEFINE_integer("num_lstm_layers",3, "Number of LSTM layers(default: 1)")
+tf.flags.DEFINE_integer("hidden_dim", 100, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 tf.flags.DEFINE_boolean("conv_net_training", False, "Training ConvNet (Default: False)")
@@ -60,13 +60,13 @@ if FLAGS.training_files_path==None:
     exit()
 
 inpH = InputHelper()
-train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,37,30 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
+train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,23,20 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
 
 # Training
 # ==================================================
 print("starting graph def")
 with tf.Graph().as_default():
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.8)
     session_conf = tf.ConfigProto(
       allow_soft_placement=FLAGS.allow_soft_placement,
       log_device_placement=FLAGS.log_device_placement,
@@ -103,7 +103,7 @@ with tf.Graph().as_default():
         learning_rate=tf.train.exponential_decay(1e-5, global_step, sum_no_of_batches*5, 0.95, staircase=False, name=None)
         optimizer = tf.train.AdamOptimizer(FLAGS.lr)
         print("initialized convmodel and siamesemodel object")
-    
+
     tv =  list(set(tf.trainable_variables())- set(convNet_tvar))
     regularization_cost = tf.reduce_sum([ tf.nn.l2_loss(v) for v in tv if 'bias' not in v.name ])
     total_loss=siameseModel.loss+FLAGS.l2_reg_lambda*regularization_cost
@@ -220,13 +220,14 @@ with tf.Graph().as_default():
         return summary, np.sum(correct), loss, correct
 
     # Generate batches
+    # Generate batches
     batches=inpH.batch_iter(
                 train_set[0], train_set[1], train_set[2], train_set[3], FLAGS.batch_size, FLAGS.num_epochs, convModel.spec, shuffle=True, is_train=False)
 
     ptr=0
     max_validation_correct=0.0
     start_time = time.time()
-    train_accuracy, val_accuracy = [] , []
+    train_accuracy, val_accuracy, pos_val_accuracy, neg_val_accuracy = [] , [], [], []
     train_loss, val_loss = [], []
     train_batch_loss_arr, val_batch_loss_arr = [], []
 
@@ -236,6 +237,8 @@ with tf.Graph().as_default():
         sum_val_correct=0.0
         sum_pos_correct=0.0
         sum_neg_correct=0.0
+        sum_pos_samples=0.0
+        sum_neg_samples=0.0
         val_epoch_loss=0.0
         val_results = []
         print("\nEvaluation:")
@@ -246,24 +249,33 @@ with tf.Graph().as_default():
                 continue
             dev_iter += 1
             summary, batch_val_correct , val_batch_loss, batch_results = dev_step(x1_dev_b, x2_dev_b, y_dev_b, dev_video_lengths, dev_iter,nn)
+
+            pos_samples = np.sum(y_dev_b)
+            sum_pos_samples = sum_pos_samples + pos_samples
+            sum_neg_samples= sum_neg_samples + len(y_dev_b)-pos_samples
             pos_correct_array = np.multiply(y_dev_b,batch_results)
             pos_correct=np.sum(pos_correct_array)
             neg_correct=batch_val_correct-pos_correct
+
             sum_pos_correct = sum_pos_correct + pos_correct
             sum_neg_correct = sum_neg_correct + neg_correct
+
             val_results = np.concatenate([val_results, batch_results])
             sum_val_correct = sum_val_correct + batch_val_correct
+
             current_step = tf.train.global_step(sess, global_step)
             val_writer.add_summary(summary, current_step)
             val_epoch_loss = val_epoch_loss + val_batch_loss*len(y_dev_b)
             val_batch_loss_arr.append(val_batch_loss*len(y_dev_b))
         print("val_loss ={}".format(val_epoch_loss/len(dev_set[2])))
         print("total_val_correct={}/total_val={}".format(sum_val_correct, len(dev_set[2])))
-        print("total_pos_correct={}".format(sum_pos_correct))
-        print("total_neg_correct={}".format(sum_neg_correct))
+        print("total_pos_correct={}/total_pos={}".format(sum_pos_correct,sum_pos_samples))
+        print("total_neg_correct={}/total_neg={}".format(sum_neg_correct,sum_neg_samples))
 
         val_accuracy.append(sum_val_correct*1.0/len(dev_set[2]))
         val_loss.append(val_epoch_loss/len(dev_set[2]))
+        pos_val_accuracy.append(sum_pos_correct*1.0/sum_pos_samples)
+        neg_val_accuracy.append(sum_neg_correct*1.0/sum_neg_samples)
 
         print("Epoch Number: {}".format(nn))
         epoch_start_time = time.time()
@@ -293,10 +305,11 @@ with tf.Graph().as_default():
                 print("Saved model {} with checkpoint to {}".format(nn, checkpoint_prefix))
 
         epoch_end_time = time.time()
+        empty=[]
         print("Total time for {} th-epoch is {}\n".format(nn, epoch_end_time-epoch_start_time))
-        save_plot(train_accuracy, val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1.01],  ['train','val' ],'./accuracy_'+str(FLAGS.name))
-        save_plot(train_loss, val_loss, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.2],  ['train','val' ],'./loss_'+str(FLAGS.name))
-        save_plot(train_batch_loss_arr, val_batch_loss_arr, 'steps', 'loss', 'Loss vs steps', [-0.1, (nn+1)*sum_no_of_batches+0.1, 0, np.max(train_batch_loss_arr)+0.2],  ['train','val' ],'./loss_batch_'+str(FLAGS.name))
+        save_plot(train_accuracy, val_accuracy, pos_val_accuracy, neg_val_accuracy, 'epochs', 'accuracy', 'Accuracy vs epochs', [-0.1, nn+0.1, 0, 1.01],  ['train','val','pos_val','neg_val' ],'./accuracy_'+str(FLAGS.name))
+        save_plot(train_loss, val_loss,empty,empty, 'epochs', 'loss', 'Loss vs epochs', [-0.1, nn+0.1, 0, np.max(train_loss)+0.2],  ['train','val' ],'./loss_'+str(FLAGS.name))
+        save_plot(train_batch_loss_arr, val_batch_loss_arr,empty,empty, 'steps', 'loss', 'Loss vs steps', [-0.1, (nn+1)*sum_no_of_batches+0.1, 0, np.max(train_batch_loss_arr)+0.2],  ['train','val' ],'./loss_batch_'+str(FLAGS.name))
 
     end_time = time.time()
     print("Total time for {} epochs is {}".format(FLAGS.num_epochs, end_time-start_time))

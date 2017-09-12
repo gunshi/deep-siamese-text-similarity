@@ -52,7 +52,7 @@ class Conv(object):
     def model(self):
 
         #placeholder for a random set of 20 images of fixed size -- 256,256
-        self.input_imgs = tf.placeholder(tf.float32, shape = [None, 227, 227, 3], name = "input_imgs")
+        self.input_imgs = tf.placeholder(tf.float32, shape = [None, 454, 227, 3], name = "input_imgs")
         #sliced_input = tf.slice(self.input_imgs, begin=[ 0, 14, 14, 0], size=[ -1, 227, 227, -1])
 
 
@@ -95,7 +95,7 @@ class Conv(object):
         self.trainable = trainable
 
         mean = [104, 114, 124]
-        scale_size = (227,227)# (227,227)
+        scale_size = (454,227)# (227,227)
 
         self.spec = [mean, scale_size]
 

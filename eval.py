@@ -20,7 +20,7 @@ tf.flags.DEFINE_string("eval_filepath", "/home/tushar/Heavy_dataset/gta_data/fin
 tf.flags.DEFINE_string("ann_filepath", "./annotation_files/", "testing folde")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
-
+tf.flags.DEFINE_string("name","result" ,"name for saving" )
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -60,7 +60,6 @@ with graph.as_default():
         saver = tf.train.import_meta_graph("{}.meta".format(checkpoint_file))
         sess.run(tf.global_variables_initializer())
         saver.restore(sess, checkpoint_file)
-
         # Get the placeholders from the graph by name
         input_imgs = graph.get_operation_by_name("input_imgs").outputs[0]
         input_x1 = graph.get_operation_by_name("input_x1").outputs[0]
@@ -80,6 +79,8 @@ with graph.as_default():
         all_predictions = []
         all_dist=[]
         all_labels=[]
+        sum_neg_correct=0.0
+        sum_pos_correct=0.0
         for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b) in batches:
             misc.imsave('temp.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
             #print(x1_dev_b)
@@ -89,26 +90,50 @@ with graph.as_default():
             d = compute_distance(dist, FLAGS.loss)
             correct = np.sum(y_dev_b==d)
             print(dist, y_dev_b, d)
+
+            num_pos_correct=np.sum(d*correct)
+            num_neg_correct=np.sum(correct)-num_pos_correct
+            sum_pos_correct=sum_pos_correct+num_pos_correct
+            sum_neg_correct=sum_neg_correct+num_neg_correct
+
             all_dist.append(dist)
             all_predictions.append(correct)
             all_labels.append(y_dev_b)
         #for ex in all_predictions:
         #    print(ex)
         correct_predictions = np.sum(all_predictions)*1.0/ len(all_predictions)
-        print("Accuracy: {:g}".format(correct_predictions))
+        print("Accuracy: {:g} ".format(correct_predictions))
+        total_pos=np.sum(all_labels)
+        total_neg=(len(all_labels)-np.sum(all_labels))
+        positive_accuracy=sum_pos_correct*1.0/total_pos
+        negative_accuracy=sum_neg_correct*1.0/total_neg
+        print('total positives:')
+        print(total_pos)
+        print('positive accuracy')
+        print(positive_accuracy)
+        print('total negatives:')
+        print(total_neg)
+        print('negative accuracy')
+        print(negative_accuracy)
         #invert dist also
 
         dist2 = [1-x for x in all_dist]
-        precision, recall, _ = precision_recall_curve(all_labels,dist2)
+        precision, recall, _ = precision_recall_curve(all_labels,dist)
 
         precision2,recall2,_=precision_recall_curve(all_labels,dist2)
-        plt.step(recall, precision, color='b', alpha=0.2,
-                         where='post')
-        plt.fill_between(recall, precision, step='post', alpha=0.2,
-                                         color='b')
+
+        plot_precision_recall(recall,precision,'0','./pr_0'+name)
+        plot_precision_recall(recall2,precision2,'1','./pr_1'+name)
+"""
+        plplot(recall, precision, label=label)
+        #plt.step(recall, precision, color='b', alpha=0.2,
+                         #where='post')
+        #plt.fill_between(recall, precision, step='post', alpha=0.2,
+                                         #color='b')
         plt.xlabel('Recall')
         plt.ylabel('Precision')
         plt.ylim([0.0, 1.05])
         plt.xlim([0.0, 1.0])
         plt.title('2-class Precision-Recall curve')
         plt.show()
+        """

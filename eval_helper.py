@@ -165,9 +165,9 @@ class InputHelper(object):
 
 
 
-def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
+def save_plot(val1, val2,val3, xlabel, ylabel, title, axis, legend,path):
     pyplot.figure()
-    pyplot.plot(val1, '*r--', val2, '^b-')
+    pyplot.plot(val1, '*r--', val2, '^b-',val3, '^m-')
     pyplot.xlabel(xlabel)
     pyplot.ylabel(ylabel)
     pyplot.title(title)
@@ -175,6 +175,18 @@ def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
     pyplot.legend(legend)
     pyplot.savefig(path+'.pdf')
     pyplot.clf()
+
+def plot_precision_recall(recall,precision, label,path):
+    pyplot.clf()
+    pyplot.plot(recall, precision, label=label)
+    pyplot.xlabel('Recall')
+    pyplot.ylabel('Precision')
+    pyplot.ylim([0.0, 1.05])
+    pyplot.xlim([0.0, 1.0])
+    pyplot.title('Precision-Recall')
+    pyplot.legend(loc="upper right")
+    pyplot.savefig(path+'.pdf')
+
 
 def compute_distance(distance, loss):
     d = np.copy(distance)

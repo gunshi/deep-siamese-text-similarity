@@ -79,8 +79,7 @@ class InputHelper(object):
         for exampleIter in range(0,len(train_data),7):
             #if(simplify!='none'):
             #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
-            #if(train_data[exampleIter+4][0] !='separate'):
-            #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
+                #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
             l_pos.append(' '.join(train_data[exampleIter+1]))
             l_pos.append(' '.join(train_data[exampleIter+2]))
 
@@ -332,9 +331,9 @@ class InputHelper(object):
 
 
 
-def save_plot(val1, val2,val3,val4, xlabel, ylabel, title, axis, legend,path):
+def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
     pyplot.figure()
-    pyplot.plot(val1, '*r--', val2, '^b-', val3,'^g-' , val4, '^m-' )
+    pyplot.plot(val1, '*r--', val2, '^b-')
     pyplot.xlabel(xlabel)
     pyplot.ylabel(ylabel)
     pyplot.title(title)
