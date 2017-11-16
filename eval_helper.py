@@ -38,7 +38,7 @@ class InputHelper(object):
         return temp
 
 
-    def getTsvTestData(self, annotation_path, base_filepath, max_document_length):
+    def getTsvTestData(self,positive_file,negative_file, annotation_path, base_filepath, max_document_length):
         print("Loading training data from " + annotation_path)
         x1=[]
         x2=[]
@@ -53,7 +53,7 @@ class InputHelper(object):
 
         # Loading Positive sample file
         train_data=[]
-        with open(annotation_path + 'positives(test)-100.txt', 'r') as file1:
+        with open(annotation_path + positive_file, 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
@@ -63,29 +63,46 @@ class InputHelper(object):
         assert(len(train_data)%7==0)
 
         l_pos = []
+        l_pairs=[]
 
 
         for exampleIter in range(0,len(train_data),7):
             l_pos.append(' '.join(train_data[exampleIter+1]))
             l_pos.append(' '.join(train_data[exampleIter+2]))
-
+            l_pairs.append([' '.join(train_data[exampleIter+1]),  ' '.join(train_data[exampleIter+2])] )
 
         # positive samples from file
         num_positive_samples = len(l_pos)
         for i in range(0,num_positive_samples,2):
             x1.append(self.getfilenames(l_pos[i], base_filepath, mapping_dict, max_document_length))
             x2.append(self.getfilenames(l_pos[i+1], base_filepath, mapping_dict, max_document_length))
-            y.append(0)#np.array([0,1]))
+            y.append(1)#np.array([0,1]))
             temp_length = len(l_pos[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
-        """
+
+
+
+
+
         # Loading Negative sample file
         l_neg = []
-        for line in open(base_filepath + 'alderly_negatives.txt'):
+
+        train_data_neg=[]
+        for line in open(annotation_path + negative_file):
             line=line.split('/', 1)[0]
-            if (len(line) > 0  and  line[0] == 'F'):
-                if random() < 0.2:
-                    l_neg.append(line.strip())
+            if(len(line) >0 and  line[0] == 'F'):
+                l_neg.append(line.strip())
+            temp=line.split()
+            if(len(temp)>0):
+                train_data_neg.append(line)
+        assert(len(train_data_neg)%7==0)
+                   #if random() < 0.2:
+                   # l_neg.append(line.strip())
+
+        for exampleIter in range(0,len(train_data_neg),7):
+            #l_neg.append(' '.join(train_data_neg[exampleIter+1]))
+            #l_neg.append(' '.join(train_data_neg[exampleIter+2]))
+            l_pairs.append([' '.join(train_data_neg[exampleIter+1]), ' '.join( train_data_neg[exampleIter+2]) ] )
 
         # negative samples from file
         num_negative_samples = len(l_neg)
@@ -96,12 +113,12 @@ class InputHelper(object):
             y.append(0)#np.array([0,1]))
             temp_length = len(l_neg[i].strip().split(" "))
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
-            """
+
         #l_neg = len(x1) - len(l_pos)//2
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths)
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths),np.asarray(l_pairs)
 
 
-    def batch_iter(self, x1, x2, y, video_lengths, batch_size, num_epochs, conv_model_spec, shuffle=False, is_train=False):
+    def batch_iter(self, x1, x2, y, video_lengths,pairdata, batch_size, num_epochs, conv_model_spec, shuffle=False, is_train=False):
         """
         Generates a batch iterator for a dataset.
         """
@@ -116,18 +133,22 @@ class InputHelper(object):
                 x1_shuffled=x1[shuffle_indices]
                 x2_shuffled=x2[shuffle_indices]
                 y_shuffled=y[shuffle_indices]
+                pair_data=posdata[shuffle_indices]
+
                 video_lengths_shuffled = video_lengths[shuffle_indices]
             else:
                 x1_shuffled=x1
                 x2_shuffled=x2
                 y_shuffled=y
+                pair_data=pairdata
+
                 video_lengths_shuffled = video_lengths
             for batch_num in range(num_batches_per_epoch):
                 start_index = batch_num * batch_size
                 end_index = min((batch_num + 1) * batch_size, data_size)
 
                 processed_imgs = self.load_preprocess_images(x1_shuffled[start_index:end_index], x2_shuffled[start_index:end_index], conv_model_spec, epoch ,is_train)
-                yield( processed_imgs[0], processed_imgs[1], y_shuffled[start_index:end_index], video_lengths_shuffled[start_index:end_index])
+                yield( processed_imgs[0], processed_imgs[1], y_shuffled[start_index:end_index], video_lengths_shuffled[start_index:end_index],pairdata[start_index:end_index])
 
 
     def normalize_input(self, img, conv_model_spec):
@@ -143,11 +164,15 @@ class InputHelper(object):
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
+                #if img_org.mode == 'P':
+                 #   img_org = img_org.convert('RGB')
                 img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
                 img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 batch1_seq.append(img_normalized)
 
                 img_org = misc.imread(side2_img_path)
+                #if img_org.mode == 'P':
+                 #   img_org = img_org.convert('RGB')
                 img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
                 img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 batch2_seq.append(img_normalized)
@@ -158,10 +183,10 @@ class InputHelper(object):
 
 
     # Data Preparatopn
-    def getTestDataSet(self,annotation_path,  data_path, max_document_length):
-        x1,x2,y,video_lengths = self.getTsvTestData(annotation_path, data_path, max_document_length)
+    def getTestDataSet(self,positive_file,negative_file, annotation_path,  data_path, max_document_length):
+        x1,x2,y,video_lengths,pairdata = self.getTsvTestData(positive_file,negative_file,annotation_path, data_path, max_document_length)
         gc.collect()
-        return x1,x2, y,video_lengths
+        return x1,x2, y,video_lengths,pairdata
 
 
 

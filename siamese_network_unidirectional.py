@@ -65,8 +65,6 @@ class SiameseLSTM(object):
         # Get lstm cell output
         with tf.name_scope("bw"+scope),tf.variable_scope("bw"+scope):
             #outputs, _, _ = tf.contrib.rnn.static_bidirectional_rnn(lstm_fw_cell_m, lstm_bw_cell_m, x, dtype=tf.float32)
-
-            #output, state = tf.nn.dynamic_rnn(lstm_fw_cell_m,inputs= x,sequence_length=video_lengths, dtype=tf.float32)
             outputs, states = tf.nn.bidirectional_dynamic_rnn(lstm_fw_cell_m, lstm_bw_cell_m, inputs= x, dtype=tf.float32,sequence_length=video_lengths)
             #print(outputs, states)
             outputs = tf.concat(outputs, 2)
@@ -153,7 +151,7 @@ class SiameseLSTM(object):
       elif loss == "contrastive":
         #with tf.name_scope("output"):
         self.distance = tf.sqrt(epsilon+ tf.reduce_sum(tf.square(tf.subtract(self.out1,self.out2)),1,keep_dims=True))
-        self.distance = tf.div(epsilon+self.distance,epsilon+tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
+        self.distance = tf.div(self.distance,epsilon+tf.add(tf.sqrt(tf.reduce_sum(tf.square(self.out1),1,keep_dims=True)),tf.sqrt(tf.reduce_sum(tf.square(self.out2),1,keep_dims=True))))
         self.distance = tf.reshape(self.distance, [-1], name="distance")
         print(self.distance)
         with tf.name_scope("loss"):

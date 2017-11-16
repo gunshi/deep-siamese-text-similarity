@@ -6,3 +6,10 @@ final_run
 slurm*
 accuracy*
 loss*
+annotation_files/*
+annotation_files2/*
+annotation_files3/*
+annotation_files4/*
+annotation_files5/*
+pdfs/
+acc/

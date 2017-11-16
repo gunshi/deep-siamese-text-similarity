@@ -1,4 +1,4 @@
-#KeyError: u'VariableV2'! /usr/bin/env python
+#! /usr/bin/env python
 from sklearn.metrics import precision_recall_curve
 import matplotlib.pyplot as plt
 import tensorflow as tf
@@ -7,7 +7,7 @@ import os
 import time
 import datetime
 #from tensorflow.contrib import learn
-from eval_helper import InputHelper, compute_distance
+from eval_helper import InputHelper, compute_distance,plot_precision_recall
 from scipy import misc
 # Parameters
 # ==================================================
@@ -15,16 +15,19 @@ from scipy import misc
 # Eval Parameters
 tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 4)")
 tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
-tf.flags.DEFINE_string("model", "/home/tushar/codes/rnn-cnn/runs/1504859242/checkpoints/model-784", "Load trained model checkpoint (Default: None)")
+tf.flags.DEFINE_string("model", "/home/tushar/codes/rnn-cnn/runs/lucia_amos_scratch/checkpoints/model-2811", "Load trained model checkpoint (Default: None)")
 tf.flags.DEFINE_string("eval_filepath", "/home/tushar/Heavy_dataset/gta_data/final/", "testing folder (default: /home/halwai/gta/final)")
-tf.flags.DEFINE_string("ann_filepath", "./annotation_files/", "testing folde")
+tf.flags.DEFINE_string("ann_filepath", "./annotation_files4/", "testing folde")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_string("name","result" ,"name for saving" )
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
-
+tf.flags.DEFINE_boolean("get_stats", False, "get stats")
+#tf.flags.DEFINE_string("ann_filepath", "./annotation_files/", "testing folde")
+tf.flags.DEFINE_string("pos_file", "./annotation_files4/", "testing folde")
+tf.flags.DEFINE_string("neg_file", "./annotation_files4/", "testing folde")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -39,7 +42,9 @@ if FLAGS.eval_filepath==None or FLAGS.model==None :
 
 # load data and map id-transform based on training time vocabulary
 inpH = InputHelper()
-x1_test,x2_test,y_test,video_lengths_test = inpH.getTestDataSet(FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
+
+
+x1_test,x2_test,y_test,video_lengths_test,pairData = inpH.getTestDataSet(FLAGS.pos_file,FLAGS.neg_file,FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
 
 print("\nEvaluating...\n")
 
@@ -74,14 +79,21 @@ with graph.as_default():
 
         print(conv_output, predictions)
         # Generate batches for one epoch
-        batches = inpH.batch_iter(x1_test,x2_test,y_test,video_lengths_test, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False, is_train=False)
+        batches = inpH.batch_iter(x1_test,x2_test,y_test,video_lengths_test,pairData, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False, is_train=False)
         # Collect the predictions here
         all_predictions = []
         all_dist=[]
+
+
+        true_pos=[]
+        true_neg=[]
+        false_pos=[]
+        false_neg=[]
+
         all_labels=[]
         sum_neg_correct=0.0
         sum_pos_correct=0.0
-        for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b) in batches:
+        for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b,pair_data) in batches: #change
             misc.imsave('temp.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
             #print(x1_dev_b)
             [x1] = sess.run([conv_output], {input_imgs: x1_dev_b})
@@ -89,7 +101,21 @@ with graph.as_default():
             [dist] = sess.run([predictions], {input_x1: x1, input_x2: x2, input_y:y_dev_b, dropout_keep_prob: 1.0, video_lengths: v_len_b})
             d = compute_distance(dist, FLAGS.loss)
             correct = np.sum(y_dev_b==d)
+            correctarr=(y_dev_b==d)
             print(dist, y_dev_b, d)
+
+            for j in range(len(y_dev_b)):
+                if(correctarr[j]):
+                    if(y_dev_b[j]):
+                        true_pos.append(pair_data[j])
+                    else:
+                        true_neg.append(pair_data[j])
+                else:
+                    if(y_dev_b[j]):
+                        false_neg.append(pair_data[j])
+                    else:
+                        false_pos.append(pair_data[j])
+
 
             num_pos_correct=np.sum(d*correct)
             num_neg_correct=np.sum(correct)-num_pos_correct
@@ -118,22 +144,21 @@ with graph.as_default():
         #invert dist also
 
         dist2 = [1-x for x in all_dist]
-        precision, recall, _ = precision_recall_curve(all_labels,dist)
+        precision, recall, _ = precision_recall_curve(all_labels,all_dist)
 
         precision2,recall2,_=precision_recall_curve(all_labels,dist2)
 
-        plot_precision_recall(recall,precision,'0','./pr_0'+name)
-        plot_precision_recall(recall2,precision2,'1','./pr_1'+name)
-"""
-        plplot(recall, precision, label=label)
-        #plt.step(recall, precision, color='b', alpha=0.2,
-                         #where='post')
-        #plt.fill_between(recall, precision, step='post', alpha=0.2,
-                                         #color='b')
-        plt.xlabel('Recall')
-        plt.ylabel('Precision')
-        plt.ylim([0.0, 1.05])
-        plt.xlim([0.0, 1.0])
-        plt.title('2-class Precision-Recall curve')
-        plt.show()
-        """
+        plot_precision_recall(recall,precision,'0','./pr_0'+FLAGS.name)
+        plot_precision_recall(recall2,precision2,'1','./pr_1'+FLAGS.name)
+
+        print('false neg')
+        for i in range(len(false_neg)):
+            print(str(false_neg[i][0]))
+            print(str(false_pos[i][1]))
+            print('')
+        print('false pos')
+        for i in range(len(false_pos)):
+            print(str(false_pos[i][0]))
+            print(str(false_pos[i][1]))
+            print('')
+
