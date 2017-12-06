@@ -6,3 +6,13 @@ final_run
 slurm*
 accuracy*
 loss*
+annotation_files/
+annotation_files2/
+annotation_files3/
+annotation_files4/
+annotation_files5/
+pdfs/
+acc/
+train_varylstm.py
+train_classify.py
+train_combined.py

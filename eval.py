@@ -44,6 +44,7 @@ if FLAGS.eval_filepath==None or FLAGS.model==None :
 inpH = InputHelper()
 
 
+
 x1_test,x2_test,y_test,video_lengths_test,pairData,reldata = inpH.getTestDataSet(FLAGS.pos_file,FLAGS.neg_file,FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
 
 print("\nEvaluating...\n")

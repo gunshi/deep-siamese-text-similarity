@@ -75,6 +75,7 @@ class Conv(object):
 
             net_layers['conv6'] = self.conv(net_layers['conv5'], 3, 256, 256, name='conv6', strides=[1,1,1,1] ,padding='SAME', groups=2)
             net_layers['pool6'] = self.pool(net_layers['conv6'], padding='VALID', name='pool6')
+
             net_layers['fcconv_1x1'] = self.conv(net_layers['pool6'], 1, 256, 128, name='fcconv_1x1', strides=[1,1,1,1] ,padding='SAME', groups=1)
 
             print(net_layers['pool6'].get_shape())
@@ -99,8 +100,8 @@ class Conv(object):
         self.trainable = trainable
 
         mean = [104, 114, 124]
-        scale_size = (227,320)# (227,227)
 
+        scale_size = (227,320)# (227,227)
         self.spec = [mean, scale_size]
 
         self.model()

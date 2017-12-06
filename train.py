@@ -63,6 +63,7 @@ if FLAGS.training_files_path==None:
     exit()
 
 inpH = InputHelper()
+
 train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,18 ,14 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
 
 # Training
@@ -153,7 +154,6 @@ with tf.Graph().as_default():
 
     # Initialize all variables
     #sess.run(tf.global_variables_initializer())
-
     #Fix weights for Conv Layers
     #convModel.initalize(sess)
 
@@ -244,7 +244,6 @@ with tf.Graph().as_default():
 
 
     for nn in range(FLAGS.num_epochs):
-
         current_step = tf.train.global_step(sess, global_step)
         print("Epoch Number: {}".format(nn))
         epoch_start_time = time.time()

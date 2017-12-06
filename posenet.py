@@ -227,8 +227,6 @@ class net(Network):
       #  (self.feed('cls3_fc1_pose')
        #      .fc(4, relu=False, name='cls3_fc_pose_wpqr'))
 
-
-
 class Conv(object):
     def __init__(self, layer, ckpt_path, batch_size, max_frames, trainable):
         self.layer = layer
@@ -249,6 +247,6 @@ class Conv(object):
             print('feataures layer shape')
             print(self.convModel.layers[self.layer].get_shape())
             self.features = tf.identity(self.convModel.layers[self.layer], name="output")
-
+    
     def initalize(self, sess, saver):
         saver.restore(sess, self.ckpt_path)
