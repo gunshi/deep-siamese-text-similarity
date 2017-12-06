@@ -52,13 +52,13 @@ class Conv(object):
     def model(self):
 
         #placeholder for a random set of 20 images of fixed size -- 256,256
-        self.input_imgs = tf.placeholder(tf.float32, shape = [None, 227, 227, 3], name = "input_imgs")
+        self.input_imgs = tf.placeholder(tf.float32, shape = [None, 227, 320, 3], name = "input_imgs")
         #sliced_input = tf.slice(self.input_imgs, begin=[ 0, 14, 14, 0], size=[ -1, 227, 227, -1])
 
 
         # Conv-Layers
         net_layers={}
-        with tf.variable_scope("weather") as scope:
+        with tf.variable_scope("") as scope:
             net_layers['conv1'] = self.conv(self.input_imgs, 11, 3, 96, name= 'conv1', strides=[1,4,4,1] ,padding='VALID', groups=1)
             net_layers['pool1'] = self.pool(net_layers['conv1'], padding='VALID', name='pool1')
             net_layers['lrn1']  = tf.nn.lrn(net_layers['pool1'], depth_radius=2, alpha=2e-5, beta=0.75,name='norm1')
@@ -76,6 +76,11 @@ class Conv(object):
             net_layers['conv6'] = self.conv(net_layers['conv5'], 3, 256, 256, name='conv6', strides=[1,1,1,1] ,padding='SAME', groups=2)
             net_layers['pool6'] = self.pool(net_layers['conv6'], padding='VALID', name='pool6')
 
+            net_layers['fcconv_1x1'] = self.conv(net_layers['pool6'], 1, 256, 128, name='fcconv_1x1', strides=[1,1,1,1] ,padding='SAME', groups=1)
+
+            print(net_layers['pool6'].get_shape())
+            print(net_layers['fcconv_1x1'].get_shape())
+            #print()
             # FC layers
             #net_layers['fc7'] = self.fc(net_layers['pool6'],  6*6*256, 4096, name='fc7_new', relu = 1)
             #net_layers['fc8'] = self.fc(net_layers['fc7'], 4096, 2543, name='fc8_new', relu = 0)
@@ -95,8 +100,8 @@ class Conv(object):
         self.trainable = trainable
 
         mean = [104, 114, 124]
-        scale_size = (227,227)# (227,227)
 
+        scale_size = (227,320)# (227,227)
         self.spec = [mean, scale_size]
 
         self.model()
