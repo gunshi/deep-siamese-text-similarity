@@ -14,8 +14,6 @@ from imgaug import augmenters as iaa
 from imgaug import parameters as iap
 import matplotlib
 from random import random
-import cv2
-from PIL import Image
 matplotlib.use('Agg')
 import matplotlib.pyplot as pyplot
 reload(sys)
@@ -81,8 +79,7 @@ class InputHelper(object):
         for exampleIter in range(0,len(train_data),7):
             #if(simplify!='none'):
             #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
-            #if(train_data[exampleIter+4][0] !='separate'):
-            #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
+                #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
             l_pos.append(' '.join(train_data[exampleIter+1]))
             l_pos.append(' '.join(train_data[exampleIter+2]))
 
@@ -195,12 +192,7 @@ class InputHelper(object):
             seq_det2 = self.seq_det[epoch%5]
 
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
-                #img_org=cv2.imread(side1_img_path)
-                #img_org=np.asarray(Image.open(open(side1_img_path, 'rb')))
                 img_org = misc.imread(side1_img_path)
-                if(len(img_org.shape)==0):
-                    print(side1_img_path)
-                    print(img_org.shape)
                 img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
                 img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 if is_train==True:
@@ -209,12 +201,7 @@ class InputHelper(object):
                 else:
                     batch1_seq.append(img_normalized)
 
-                #img_org=cv2.imread(side2_img_path)
-                #img_org=np.asarray(Image.open(open(side1_img_path, 'rb')))
                 img_org = misc.imread(side2_img_path)
-                if(len(img_org.shape)==0):
-                    print(side2_img_path)
-                    print(img_org.shape)
                 img_resized = misc.imresize(np.asarray(img_org), conv_model_spec[1])
                 img_normalized = self.normalize_input(img_resized, conv_model_spec)
                 if is_train==True:
@@ -344,9 +331,9 @@ class InputHelper(object):
 
 
 
-def save_plot(val1, val2,val3,val4, xlabel, ylabel, title, axis, legend,path):
+def save_plot(val1, val2, xlabel, ylabel, title, axis, legend,path):
     pyplot.figure()
-    pyplot.plot(val1, '*r--', val2, '^b-', val3,'^g-' , val4, '^m-' )
+    pyplot.plot(val1, '*r--', val2, '^b-')
     pyplot.xlabel(xlabel)
     pyplot.ylabel(ylabel)
     pyplot.title(title)

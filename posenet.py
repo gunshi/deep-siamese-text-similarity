@@ -1,8 +1,27 @@
 from network import Network
 
-class Conv(Network):
+import tensorflow as tf
+import numpy as np
+from scipy import misc
+
+class net(Network):
+    def __init__(self, inputs, trainable=True):
+        # The input nodes for this network
+        self.inputs = inputs
+        # The current list of terminal nodes
+        self.terminals = []
+        # Mapping from layer names to layers
+        self.layers = dict(inputs)
+        # If true, the resulting variables are set as trainable
+        self.trainable = trainable
+        # Switch variable for dropout
+        self.use_dropout = tf.placeholder_with_default(tf.constant(1.0),
+                                                       shape=[],
+                                                       name='use_dropout')
+        self.setup()
+
     def setup(self):
-        (self.feed('data') 
+        (self.feed('data')
              .conv(7, 7, 64, 2, 2, name='conv1')
              .max_pool(3, 3, 2, 2, name='pool1')
              .lrn(2, 2e-05, 0.75, name='norm1')
@@ -24,9 +43,9 @@ class Conv(Network):
         (self.feed('pool2')
              .conv(1, 1, 64, 1, 1, name='icp1_out0'))
 
-        (self.feed('icp1_out0', 
-                   'icp1_out1', 
-                   'icp1_out2', 
+        (self.feed('icp1_out0',
+                   'icp1_out1',
+                   'icp1_out2',
                    'icp1_out3')
              .concat(3, name='icp2_in')
              .conv(1, 1, 128, 1, 1, name='icp2_reduction1')
@@ -43,9 +62,9 @@ class Conv(Network):
         (self.feed('icp2_in')
              .conv(1, 1, 128, 1, 1, name='icp2_out0'))
 
-        (self.feed('icp2_out0', 
-                   'icp2_out1', 
-                   'icp2_out2', 
+        (self.feed('icp2_out0',
+                   'icp2_out1',
+                   'icp2_out2',
                    'icp2_out3')
              .concat(3, name='icp2_out')
              .max_pool(3, 3, 2, 2, name='icp3_in')
@@ -63,18 +82,18 @@ class Conv(Network):
         (self.feed('icp3_in')
              .conv(1, 1, 192, 1, 1, name='icp3_out0'))
 
-        (self.feed('icp3_out0', 
-                   'icp3_out1', 
-                   'icp3_out2', 
+        (self.feed('icp3_out0',
+                   'icp3_out1',
+                   'icp3_out2',
                    'icp3_out3')
              .concat(3, name='icp3_out')
              .avg_pool(5, 5, 3, 3, padding='VALID', name='cls1_pool')
-             .conv(1, 1, 128, 1, 1, name='cls1_reduction_pose')
-             .fc(1024, name='cls1_fc1_pose')
-             .fc(3, relu=False, name='cls1_fc_pose_xyz'))
+             .conv(1, 1, 128, 1, 1, name='cls1_reduction_pose'))
+#             .fc(1024, name='cls1_fc1_pose')
+#             .fc(3, relu=False, name='cls1_fc_pose_xyz'))
 
-        (self.feed('cls1_fc1_pose')
-             .fc(4, relu=False, name='cls1_fc_pose_wpqr'))
+#        (self.feed('cls1_fc1_pose')
+#             .fc(4, relu=False, name='cls1_fc_pose_wpqr'))
 
         (self.feed('icp3_out')
              .conv(1, 1, 112, 1, 1, name='icp4_reduction1')
@@ -91,9 +110,9 @@ class Conv(Network):
         (self.feed('icp3_out')
              .conv(1, 1, 160, 1, 1, name='icp4_out0'))
 
-        (self.feed('icp4_out0', 
-                   'icp4_out1', 
-                   'icp4_out2', 
+        (self.feed('icp4_out0',
+                   'icp4_out1',
+                   'icp4_out2',
                    'icp4_out3')
              .concat(3, name='icp4_out')
              .conv(1, 1, 128, 1, 1, name='icp5_reduction1')
@@ -110,9 +129,9 @@ class Conv(Network):
         (self.feed('icp4_out')
              .conv(1, 1, 128, 1, 1, name='icp5_out0'))
 
-        (self.feed('icp5_out0', 
-                   'icp5_out1', 
-                   'icp5_out2', 
+        (self.feed('icp5_out0',
+                   'icp5_out1',
+                   'icp5_out2',
                    'icp5_out3')
              .concat(3, name='icp5_out')
              .conv(1, 1, 144, 1, 1, name='icp6_reduction1')
@@ -129,18 +148,18 @@ class Conv(Network):
         (self.feed('icp5_out')
              .conv(1, 1, 112, 1, 1, name='icp6_out0'))
 
-        (self.feed('icp6_out0', 
-                   'icp6_out1', 
-                   'icp6_out2', 
+        (self.feed('icp6_out0',
+                   'icp6_out1',
+                   'icp6_out2',
                    'icp6_out3')
              .concat(3, name='icp6_out')
              .avg_pool(5, 5, 3, 3, padding='VALID', name='cls2_pool')
-             .conv(1, 1, 128, 1, 1, name='cls2_reduction_pose')
-             .fc(1024, name='cls2_fc1')
-             .fc(3, relu=False, name='cls2_fc_pose_xyz'))
+             .conv(1, 1, 128, 1, 1, name='cls2_reduction_pose'))
+ #            .fc(1024, name='cls2_fc1')
+ #            .fc(3, relu=False, name='cls2_fc_pose_xyz'))
 
-        (self.feed('cls2_fc1')
-             .fc(4, relu=False, name='cls2_fc_pose_wpqr'))
+  #      (self.feed('cls2_fc1')
+    #         .fc(4, relu=False, name='cls2_fc_pose_wpqr'))
 
         (self.feed('icp6_out')
              .conv(1, 1, 160, 1, 1, name='icp7_reduction1')
@@ -157,9 +176,9 @@ class Conv(Network):
         (self.feed('icp6_out')
              .conv(1, 1, 256, 1, 1, name='icp7_out0'))
 
-        (self.feed('icp7_out0', 
-                   'icp7_out1', 
-                   'icp7_out2', 
+        (self.feed('icp7_out0',
+                   'icp7_out1',
+                   'icp7_out2',
                    'icp7_out3')
              .concat(3, name='icp7_out')
              .max_pool(3, 3, 2, 2, name='icp8_in')
@@ -177,9 +196,9 @@ class Conv(Network):
         (self.feed('icp8_in')
              .conv(1, 1, 256, 1, 1, name='icp8_out0'))
 
-        (self.feed('icp8_out0', 
-                   'icp8_out1', 
-                   'icp8_out2', 
+        (self.feed('icp8_out0',
+                   'icp8_out1',
+                   'icp8_out2',
                    'icp8_out3')
              .concat(3, name='icp8_out')
              .conv(1, 1, 192, 1, 1, name='icp9_reduction1')
@@ -196,14 +215,40 @@ class Conv(Network):
         (self.feed('icp8_out')
              .conv(1, 1, 384, 1, 1, name='icp9_out0'))
 
-        (self.feed('icp9_out0', 
-                   'icp9_out1', 
-                   'icp9_out2', 
+        (self.feed('icp9_out0',
+                   'icp9_out1',
+                   'icp9_out2',
                    'icp9_out3')
              .concat(3, name='icp9_out')
-             .avg_pool(7, 7, 1, 1, padding='VALID', name='cls3_pool')
-             .fc(2048, name='cls3_fc1_pose')
-             .fc(3, relu=False, name='cls3_fc_pose_xyz'))
+             .avg_pool(7, 7, 1, 1, padding='VALID', name='cls3_pool'))
+     #        .fc(2048, name='cls3_fc1_pose')
+     #        .fc(3, relu=False, name='cls3_fc_pose_xyz'))
 
-        (self.feed('cls3_fc1_pose')
-             .fc(4, relu=False, name='cls3_fc_pose_wpqr'))
+      #  (self.feed('cls3_fc1_pose')
+       #      .fc(4, relu=False, name='cls3_fc_pose_wpqr'))
+
+
+
+class Conv(object):
+    def __init__(self, layer, ckpt_path, batch_size, max_frames, trainable):
+        self.layer = layer
+        self.batch_size = batch_size
+        self.max_frames = max_frames
+        self.ckpt_path = ckpt_path
+        self.trainable = trainable
+
+        mean = [104, 114, 124]
+        scale_size = (224,330)
+
+        self.spec = [mean, scale_size]
+
+        self.input_imgs = tf.placeholder(tf.float32, [None, 224, 330, 3], name="input_imgs")
+        self.convModel = net({'data': self.input_imgs})
+
+        with tf.name_scope("conv"):
+            print('feataures layer shape')
+            print(self.convModel.layers[self.layer].get_shape())
+            self.features = tf.identity(self.convModel.layers[self.layer], name="output")
+
+    def initalize(self, sess, saver):
+        saver.restore(sess, self.ckpt_path)

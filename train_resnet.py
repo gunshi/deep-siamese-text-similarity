@@ -2,17 +2,18 @@
 
 import tensorflow as tf
 import numpy as np
+slim = tf.contrib.slim
 import re
 import os
 import time
 import datetime
 import gc
-from helper_new import InputHelper, save_plot, compute_distance
+from helper import InputHelper, save_plot, compute_distance
 from siamese_network import SiameseLSTM
 import gzip
 from random import random
 from posenet import net, Conv
-
+from inception_resnet_v2 import *
 # Parameters
 # ==================================================
 
@@ -42,7 +43,7 @@ tf.flags.DEFINE_integer("return_outputs", 1, "Outpust from LSTM, 0=>Last LSMT ou
 tf.flags.DEFINE_string("summaries_dir", "/home/tushar/codes/rnn-cnn/summaries/", "Summary storage")
 
 #Conv Net Parameters
-tf.flags.DEFINE_string("conv_layer", "icp9_out0", "CNN features from AMOSNet(default: cls3_fc1_pose)")
+tf.flags.DEFINE_string("conv_layer", "cls3_fc1_pose", "CNN features from AMOSNet(default: cls3_fc1_pose)")
 tf.flags.DEFINE_string("conv_layer_weight_pretrained_path", "/home/tushar/codes/rnn-cnn/PoseNet.ckpt", "AMOSNet pre-trained weights path")#or posenet.ckpt?
 
 #tf.flags.DEFINE_string("train_file_positive", "./annotation_files2/positives-nospills-old+new-inters-train+val.txt", "Positive_training_file")
@@ -65,7 +66,7 @@ if FLAGS.training_files_path==None:
 inpH = InputHelper()
 #train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,42 ,30 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
 train_set, dev_set, sum_no_of_batches,num_pos,num_neg = inpH.getDataSets(FLAGS.training_file_path,FLAGS.training_files_path, FLAGS.max_frames,12,9 , FLAGS.batch_size, FLAGS.train_file_positive,FLAGS.train_file_negative)
-
+checkpoint_file = '/home/tushar/codes/gunsshi/inception_resnet_v2_2016_08_30.ckpt'
 # Training
 # ==================================================
 print("starting graph def")

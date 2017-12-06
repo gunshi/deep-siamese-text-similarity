@@ -16,8 +16,8 @@ import matplotlib
 from random import random
 matplotlib.use('Agg')
 import matplotlib.pyplot as pyplot
-reload(sys)
-sys.setdefaultencoding("utf-8")
+#reload(sys)
+#sys.setdefaultencoding("utf-8")
 
 class InputHelper(object):
 
@@ -25,11 +25,17 @@ class InputHelper(object):
         temp = []
         line = line.strip().split(" ")
 
+        """
         # Store paths of all images in the sequence
         for i in range(1, len(line), 1):
             if i < max_document_length:
                 #temp.append(base_filepath + mapping_dict[line[0]] + '/Image' + line[i].zfill(5) + '.jpg')
                 temp.append(base_filepath + mapping_dict[line[0]] + '/' + line[i] + '.png')
+        """
+
+        for i in range(1, len(line), 1):
+            if i < max_document_length:
+                temp.append(base_filepath + line[0] + '/' + line[i] + '.jpg')
 
         #append-black images if the seq length is less than 20
         while len(temp) < max_document_length:
@@ -45,15 +51,17 @@ class InputHelper(object):
         y=[]
         video_lengths = []
 
-        #load all the mapping dictonaries
         mapping_dict = {}
+        """
+        #load all the mapping dictonaries
+
         print(annotation_path+'mapping_file')
         for line_no,line in enumerate(open(annotation_path + 'mapping_file')):
             mapping_dict['F' + str(line_no+1)] = line.strip()
-
+        """
         # Loading Positive sample file
         train_data=[]
-        with open(annotation_path + positive_file, 'r') as file1:
+        with open(positive_file, 'r') as file1:
             for row in file1:
                 temprow=row.split('/', 1)[0]
                 temp=temprow.split()
@@ -64,13 +72,13 @@ class InputHelper(object):
 
         l_pos = []
         l_pairs=[]
-
+        l_rels=[]
 
         for exampleIter in range(0,len(train_data),7):
             l_pos.append(' '.join(train_data[exampleIter+1]))
             l_pos.append(' '.join(train_data[exampleIter+2]))
             l_pairs.append([' '.join(train_data[exampleIter+1]),  ' '.join(train_data[exampleIter+2])] )
-
+            l_rels.append(' '.join(train_data[exampleIter+4]) )
         # positive samples from file
         num_positive_samples = len(l_pos)
         for i in range(0,num_positive_samples,2):
@@ -88,10 +96,10 @@ class InputHelper(object):
         l_neg = []
 
         train_data_neg=[]
-        for line in open(annotation_path + negative_file):
+        for line in open(negative_file):
             line=line.split('/', 1)[0]
-            if(len(line) >0 and  line[0] == 'F'):
-                l_neg.append(line.strip())
+            #if(len(line) >0 and  line[0] == 'F'):
+                #l_neg.append(line.strip())
             temp=line.split()
             if(len(temp)>0):
                 train_data_neg.append(line)
@@ -100,9 +108,10 @@ class InputHelper(object):
                    # l_neg.append(line.strip())
 
         for exampleIter in range(0,len(train_data_neg),7):
-            #l_neg.append(' '.join(train_data_neg[exampleIter+1]))
-            #l_neg.append(' '.join(train_data_neg[exampleIter+2]))
+            l_neg.append(' '.join(train_data_neg[exampleIter+1]))
+            l_neg.append(' '.join(train_data_neg[exampleIter+2]))
             l_pairs.append([' '.join(train_data_neg[exampleIter+1]), ' '.join( train_data_neg[exampleIter+2]) ] )
+            l_rels.append('negative')
 
         # negative samples from file
         num_negative_samples = len(l_neg)
@@ -115,7 +124,7 @@ class InputHelper(object):
             video_lengths.append(max_document_length if temp_length > max_document_length else temp_length)
 
         #l_neg = len(x1) - len(l_pos)//2
-        return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths),np.asarray(l_pairs)
+        return np.asarray(x1),np.asarray(x2),np.asarray(y), np.asarray(video_lengths),np.asarray(l_pairs), np.asarray(l_rels)
 
 
     def batch_iter(self, x1, x2, y, video_lengths,pairdata, batch_size, num_epochs, conv_model_spec, shuffle=False, is_train=False):
@@ -161,7 +170,8 @@ class InputHelper(object):
     def load_preprocess_images(self, side1_paths, side2_paths, conv_model_spec, epoch, is_train=False):
         batch1_seq, batch2_seq = [], []
         for side1_img_paths, side2_img_paths in zip(side1_paths, side2_paths):
-
+            print(side1_img_paths)
+            print(side2_img_paths)
             for side1_img_path,side2_img_path in zip(side1_img_paths, side2_img_paths):
                 img_org = misc.imread(side1_img_path)
                 #if img_org.mode == 'P':
@@ -184,9 +194,9 @@ class InputHelper(object):
 
     # Data Preparatopn
     def getTestDataSet(self,positive_file,negative_file, annotation_path,  data_path, max_document_length):
-        x1,x2,y,video_lengths,pairdata = self.getTsvTestData(positive_file,negative_file,annotation_path, data_path, max_document_length)
+        x1,x2,y,video_lengths,pairdata, reldata = self.getTsvTestData(positive_file,negative_file,annotation_path, data_path, max_document_length)
         gc.collect()
-        return x1,x2, y,video_lengths,pairdata
+        return x1,x2, y,video_lengths,pairdata, reldata
 
 
 

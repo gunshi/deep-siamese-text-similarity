@@ -15,22 +15,27 @@ from imgaug import parameters as iap
 import matplotlib
 from random import random
 import cv2
+from importlib import reload
 from PIL import Image
 matplotlib.use('Agg')
 import matplotlib.pyplot as pyplot
-reload(sys)
-sys.setdefaultencoding("utf-8")
+#reload(sys)
+#sys.setdefaultencoding("utf-8")
 
 class InputHelper(object):
 
     def getfilenames(self, line, base_filepath, mapping_dict, max_document_length):
         temp = []
         line = line.strip().split(" ")
-
+        """
         # Store paths of all images in the sequence
         for i in range(1, len(line), 1):
             if i < max_document_length:
                 temp.append(base_filepath + mapping_dict[line[0]] + '/' + line[i] + '.png')
+        """
+        for i in range(1, len(line), 1):
+            if i < max_document_length:
+                temp.append(base_filepath + line[0] + '/' + line[i] + '.jpg')
 
         #append-black images if the seq length is less than 20
         while len(temp) < max_document_length:
@@ -47,11 +52,13 @@ class InputHelper(object):
         video_lengths = []
 
         #load all the mapping dictonaries
+        mapping_dict={}
+        """
         mapping_dict = {}
         print(base_filepath+'mapping_file')
         for line_no,line in enumerate(open(base_filepath + 'mapping_file')):
             mapping_dict['F' + str(line_no+1)] = line.strip()
-
+        """
         # Loading Positive sample file
         train_data=[]
         #with open(base_filepath + 'positive_annotations.txt', 'r') as file1:
@@ -105,11 +112,28 @@ class InputHelper(object):
         #for line in open(base_filepath + 'negs-concat.txt'):
         #for line in open(base_filepath + 'negs-train+val-less.txt'):
         #for line in open(base_filepath + 'negative_annotations_day_day_overlap.txt'):
+        train_data=[]
+        with open(negative_file) as file2:
+            for row in file2:
+                temprow=row.split('/', 1)[0]
+                temp=temprow.split()
+                if(len(temp)>0 and temp[0][0]!='/'):
+                    train_data.append(temp)
+        assert(len(train_data)%7==0)
+
+        for exampleIter in range(0,len(train_data),7):
+            #if(simplify!='none'):
+            #if((train_data[exampleIter+4][0] in tags_simplify) and train_data[exampleIter+4][1]==simplify):
+            #if(train_data[exampleIter+4][0] !='separate'):
+            #    if(train_data[exampleIter+6][0]  == train_data[exampleIter+6][1] ):
+            l_neg.append(' '.join(train_data[exampleIter+1]))
+            l_neg.append(' '.join(train_data[exampleIter+2]))
+        """
         for line in open(negative_file):
             line=line.split('/', 1)[0]
             if (len(line) > 0  and  line[0] == 'F'):
                 l_neg.append(line.strip())
-
+        """
         # negative samples from file
         num_negative_samples = len(l_neg)
         for i in range(0,num_negative_samples,2):
@@ -198,6 +222,9 @@ class InputHelper(object):
                 #img_org=cv2.imread(side1_img_path)
                 #img_org=np.asarray(Image.open(open(side1_img_path, 'rb')))
                 img_org = misc.imread(side1_img_path)
+                #print(img_org.shape)
+                height,width,c=img_org.shape
+                img_org=img_org[:height-40,:]
                 if(len(img_org.shape)==0):
                     print(side1_img_path)
                     print(img_org.shape)
@@ -212,6 +239,8 @@ class InputHelper(object):
                 #img_org=cv2.imread(side2_img_path)
                 #img_org=np.asarray(Image.open(open(side1_img_path, 'rb')))
                 img_org = misc.imread(side2_img_path)
+                height,width,c=img_org.shape
+                img_org=img_org[:height-40,:]
                 if(len(img_org.shape)==0):
                     print(side2_img_path)
                     print(img_org.shape)

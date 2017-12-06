@@ -7,7 +7,7 @@ import os
 import time
 import datetime
 import gc
-from helper_new import InputHelper, save_plot, compute_distance
+from helper import InputHelper, save_plot, compute_distance
 from siamese_network import SiameseLSTM
 import gzip
 from random import random
@@ -19,7 +19,7 @@ from posenet import net, Conv
 tf.flags.DEFINE_integer("embedding_dim", 1000, "Dimensionality of character embedding (default: 300)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.01, "L2 regularizaion lambda (default: 0.0)")
-tf.flags.DEFINE_string("training_file_path", "/home/tushar/Heavy_dataset/mapillary/", "training folder (default: /home/halwai/gta_data/final)")
+tf.flags.DEFINE_string("training_file_path", "/home/tushar/Heavy_dataset/gta_data/final/", "training folder (default: /home/halwai/gta_data/final)")
 tf.flags.DEFINE_string("training_files_path", "./annotation_files/", "training folder (default: /home/halwai/gta_data/final)")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("name", "result", "prefix names of the output files(default: result)")
@@ -29,7 +29,7 @@ tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 15, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 1, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers",1, "Number of LSTM layers(default: 1)")
-tf.flags.DEFINE_integer("hidden_dim", 150, "Number of LSTM layers(default: 2)")
+tf.flags.DEFINE_integer("hidden_dim", 80, "Number of LSTM layers(default: 2)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 tf.flags.DEFINE_boolean("conv_net_training", False, "Training ConvNet (Default: False)")
@@ -42,7 +42,7 @@ tf.flags.DEFINE_integer("return_outputs", 1, "Outpust from LSTM, 0=>Last LSMT ou
 tf.flags.DEFINE_string("summaries_dir", "/home/tushar/codes/rnn-cnn/summaries/", "Summary storage")
 
 #Conv Net Parameters
-tf.flags.DEFINE_string("conv_layer", "icp9_out0", "CNN features from AMOSNet(default: cls3_fc1_pose)")
+tf.flags.DEFINE_string("conv_layer", "cls3_fc1_pose", "CNN features from AMOSNet(default: cls3_fc1_pose)")
 tf.flags.DEFINE_string("conv_layer_weight_pretrained_path", "/home/tushar/codes/rnn-cnn/PoseNet.ckpt", "AMOSNet pre-trained weights path")#or posenet.ckpt?
 
 #tf.flags.DEFINE_string("train_file_positive", "./annotation_files2/positives-nospills-old+new-inters-train+val.txt", "Positive_training_file")

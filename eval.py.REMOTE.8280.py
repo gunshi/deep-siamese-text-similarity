@@ -7,16 +7,16 @@ import os
 import time
 import datetime
 #from tensorflow.contrib import learn
-from eval_helper_new import InputHelper, compute_distance,plot_precision_recall
+from eval_helper import InputHelper, compute_distance,plot_precision_recall
 from scipy import misc
 # Parameters
 # ==================================================
 
 # Eval Parameters
-tf.flags.DEFINE_integer("batch_size", 1, "Batch Size (default: 4)")
+tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 4)")
 tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
-tf.flags.DEFINE_string("model", "/home/tushar/codes/rnn-cnn/runs/testbiggerwindow-450-fulldata/checkpoints/model-6712", "Load trained model checkpoint (Default: None)")
-tf.flags.DEFINE_string("eval_filepath", "/home/tushar/Heavy_dataset/mapillary/", "testing folder (default: /home/halwai/gta/final)")
+tf.flags.DEFINE_string("model", "/home/tushar/codes/rnn-cnn/runs/lucia_amos_scratch/checkpoints/model-2811", "Load trained model checkpoint (Default: None)")
+tf.flags.DEFINE_string("eval_filepath", "/home/tushar/Heavy_dataset/gta_data/final/", "testing folder (default: /home/halwai/gta/final)")
 tf.flags.DEFINE_string("ann_filepath", "./annotation_files4/", "testing folde")
 tf.flags.DEFINE_integer("max_frames", 20, "Maximum Number of frame (default: 20)")
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
@@ -26,8 +26,8 @@ tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device 
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 tf.flags.DEFINE_boolean("get_stats", False, "get stats")
 #tf.flags.DEFINE_string("ann_filepath", "./annotation_files/", "testing folde")
-tf.flags.DEFINE_string("pos_file","./newfiles/test-full-pos.txt", "testing folde")
-tf.flags.DEFINE_string("neg_file", "./newfiles/test-full-negs.txt", "testing folde")
+tf.flags.DEFINE_string("pos_file", "./annotation_files4/", "testing folde")
+tf.flags.DEFINE_string("neg_file", "./annotation_files4/", "testing folde")
 
 FLAGS = tf.flags.FLAGS
 FLAGS._parse_flags()
@@ -44,7 +44,7 @@ if FLAGS.eval_filepath==None or FLAGS.model==None :
 inpH = InputHelper()
 
 
-x1_test,x2_test,y_test,video_lengths_test,pairData,reldata = inpH.getTestDataSet(FLAGS.pos_file,FLAGS.neg_file,FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
+x1_test,x2_test,y_test,video_lengths_test,pairData = inpH.getTestDataSet(FLAGS.pos_file,FLAGS.neg_file,FLAGS.ann_filepath, FLAGS.eval_filepath, FLAGS.max_frames)
 
 print("\nEvaluating...\n")
 
@@ -79,7 +79,7 @@ with graph.as_default():
 
         print(conv_output, predictions)
         # Generate batches for one epoch
-        batches = inpH.batch_iter(x1_test,x2_test,y_test,video_lengths_test,pairData, 1, 1, [[104, 114, 124], (227, 330)] ,shuffle=False, is_train=False) ##??
+        batches = inpH.batch_iter(x1_test,x2_test,y_test,video_lengths_test,pairData, 1, 1, [[104, 114, 124], (227, 227)] ,shuffle=False, is_train=False)
         # Collect the predictions here
         all_predictions = []
         all_dist=[]
@@ -93,16 +93,12 @@ with graph.as_default():
         all_labels=[]
         sum_neg_correct=0.0
         sum_pos_correct=0.0
-        batchnum=0
         for (x1_dev_b,x2_dev_b,y_dev_b,v_len_b,pair_data) in batches: #change
-            batchnum+=1
+            misc.imsave('temp.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
             #print(x1_dev_b)
             [x1] = sess.run([conv_output], {input_imgs: x1_dev_b})
             [x2] = sess.run([conv_output], {input_imgs: x2_dev_b})
             [dist] = sess.run([predictions], {input_x1: x1, input_x2: x2, input_y:y_dev_b, dropout_keep_prob: 1.0, video_lengths: v_len_b})
-            #diststr=' '.join(dist)
-            #ystr=' '.join(y_dev_b)
-            misc.imsave('temp/temp'+str(batchnum)+'.png', np.vstack([np.hstack(x1_dev_b),np.hstack(x2_dev_b)]))
             d = compute_distance(dist, FLAGS.loss)
             correct = np.sum(y_dev_b==d)
             correctarr=(y_dev_b==d)

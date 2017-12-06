@@ -29,7 +29,11 @@ tf.flags.DEFINE_integer("batch_size", 4, "Batch Size (default: 10)")
 tf.flags.DEFINE_integer("num_epochs", 15, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("checkpoint_every", 1, "Save model after this many epochs (default: 100)")
 tf.flags.DEFINE_integer("num_lstm_layers",1, "Number of LSTM layers(default: 1)")
+<<<<<<< HEAD
 tf.flags.DEFINE_integer("hidden_dim", 150, "Number of LSTM layers(default: 2)")
+=======
+tf.flags.DEFINE_integer("hidden_dim", 80, "Number of LSTM layers(default: 2)")
+>>>>>>> 0fc35bb494ce0f33bbb0b94b900b4245cb0d2834
 tf.flags.DEFINE_string("loss", "contrastive", "Type of Loss functions:: contrastive/AAAI(default: contrastive)")
 tf.flags.DEFINE_boolean("projection", False, "Project Conv Layers Output to a Lower Dimensional Embedding (Default: True)")
 tf.flags.DEFINE_boolean("conv_net_training", False, "Training ConvNet (Default: False)")
